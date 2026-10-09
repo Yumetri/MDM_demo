@@ -63,6 +63,7 @@
 
 ## API 규약과 문서 관리
 
+- API 문서는 `/docs`에서 Scalar로 제공하고 `/openapi.json`을 연결한다. Swagger UI와 ReDoc은 비활성화한다. Scalar Python 패키지와 브라우저 번들 버전을 고정한다.
 - 목록 API는 cursor 기반 페이지네이션을 사용한다.
 - 응답 구조, 오류 코드, 메시지, HTTP 상태 매핑은 [API 규약](docs/api-conventions.md)을 기준으로 통일한다.
 - 공통 응답 DTO, 오류 코드·메시지 카탈로그, 예외 처리기를 재사용한다. 라우터별로 오류 문자열이나 응답 구조를 복제하지 않는다.

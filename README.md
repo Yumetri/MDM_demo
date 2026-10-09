@@ -11,10 +11,11 @@ make up
 make smoke
 ```
 
-- API 문서: http://localhost:8000/docs
+- Scalar API 문서: http://localhost:8000/docs
+- OpenAPI 스키마: http://localhost:8000/openapi.json
 - 프로세스 상태: http://localhost:8000/health (정상 시 204)
 - PostgreSQL과 Redis는 Compose 내부 네트워크에서만 접근한다.
-- `make smoke`는 API 컨테이너에서 HTTP 응답, 비동기 PostgreSQL 연결 및 `SELECT 1`, 비동기 Redis `PING`을 확인한다.
+- `make smoke`는 API 컨테이너에서 HTTP 응답, Scalar 문서 HTML·OpenAPI 연결 설정·기존 문서 경로 비활성화, 비동기 PostgreSQL 연결 및 `SELECT 1`, 비동기 Redis `PING`을 확인한다. 브라우저 렌더링 검사는 별도로 수행한다.
 - `/health`는 프로세스 생존 검사이며 DB·캐시의 지속적인 정상 동작을 보장하는 readiness 검사가 아니다.
 
 기본값으로 바로 실행할 수 있다. 포트나 로컬 DB 설정을 바꾸려면 `.env.example`을 `.env`로 복사해 수정한다. 기본 자격증명은 로컬 개발 전용이다. 기존 PostgreSQL 볼륨이 있으면 환경변수 변경만으로 DB 계정·암호가 바뀌지 않는다.
@@ -28,6 +29,8 @@ make check-container # 컨테이너에서 Ruff·Pyrefly 검증
 ```
 
 호스트에 uv가 있으면 `make check`도 사용할 수 있다. 앱 실행은 Compose를 기준으로 한다. 소스 변경 후 `make up`을 다시 실행하면 이미지를 재빌드한다.
+
+API 문서는 [Scalar의 공식 FastAPI 통합](https://scalar.com/products/api-references/integrations/fastapi)을 사용한다. Swagger UI와 ReDoc은 비활성화한다. Scalar JavaScript는 `src/mdm_demo/app.py`에서 고정한 버전을 CDN으로 불러오므로 브라우저에서 CDN 접근이 필요하다. API 테스트 요청은 현재 서버로 직접 보내며 외부 프록시를 사용하지 않는다.
 
 ## 환경 관리
 
