@@ -28,7 +28,7 @@ make compose-check # Compose 설정 검증
 make check-container # 컨테이너에서 Ruff·Pyrefly 검증
 ```
 
-호스트에 uv가 있으면 `make check`도 사용할 수 있다. 앱 실행은 Compose를 기준으로 한다. 소스 변경 후 `make up`을 다시 실행하면 이미지를 재빌드한다.
+정적 검증은 `make check-container`를 기본으로 한다. 호스트에 uv가 있으면 같은 Ruff·Pyrefly 검사를 수행하는 `make check`도 허용한다. 앱 실행은 Compose를 기준으로 한다. 소스 변경 후 `make up`을 다시 실행하면 이미지를 재빌드한다.
 
 API 문서는 [Scalar의 공식 FastAPI 통합](https://scalar.com/products/api-references/integrations/fastapi)을 사용한다. Swagger UI와 ReDoc은 비활성화한다. Scalar JavaScript는 `src/mdm_demo/app.py`에서 고정한 버전을 CDN으로 불러오므로 브라우저에서 CDN 접근이 필요하다. API 테스트 요청은 현재 서버로 직접 보내며 외부 프록시를 사용하지 않는다.
 
@@ -47,3 +47,7 @@ PostgreSQL은 named volume에 데이터를 보존한다. PostgreSQL 18의 볼륨
 ## 구현 범위
 
 현재는 Compose 실행에 필요한 최소 앱과 연결 확인 도구가 있다. 도메인 모델, Data Mapper, UoW, 마이그레이션, 업무 API 및 계약 테스트는 아직 구현하지 않았다. 기준은 [AGENTS.md](AGENTS.md)와 [API 규약 초안](docs/api-conventions.md)을 따른다.
+
+헬스 라우터는 `src/mdm_demo/presentation/routers/health.py`에 있고 `src/mdm_demo/app.py`에서 등록한다. 나머지 계층은 AGENTS.md의 지정 경로에 실제 구현이 필요할 때 추가한다.
+
+미정 사항은 마이그레이션 도구·운영 정책, 업무별 캐시 정책, 테스트 러너·실행 명령·CI 환경이다. API 메시지 언어와 도메인별 오류 코드는 API 규약 초안에서 확정한다.
