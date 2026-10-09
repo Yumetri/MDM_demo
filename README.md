@@ -44,5 +44,7 @@ PostgreSQL은 볼륨에 데이터를 보존하며, 기존 볼륨의 DB 계정·�
 
 ## 관련 문서
 
+- [서비스 기능맵](docs/features/README.md)
+- [기능 문서 템플릿](docs/templates/feature.md)
 - [개발·아키텍처·리뷰 규칙](AGENTS.md)
 - [API 규약 초안](docs/api-conventions.md)
