@@ -22,6 +22,21 @@ Company CRUD는 `/companies`에서 제공하며 구체적인 요청·응답은 [
 
 주소는 기본 포트 기준이다. 소스 변경 후 `make up`을 다시 실행하면 이미지를 재빌드한다.
 
+### DataGrip에서 PostgreSQL 연결
+
+`make up` 후 PostgreSQL 데이터 소스를 추가하고 다음 기본값으로 연결한다.
+
+| 항목 | 값 |
+| --- | --- |
+| Host | `127.0.0.1` |
+| Port | `5432` |
+| Database | `mdm` |
+| User | `mdm` |
+| Password | `mdm-local-only` |
+| SSL | 비활성화 |
+
+PostgreSQL 포트는 로컬 루프백에만 공개한다. `.env`에서 DB 이름·계정·암호를 변경했다면 실제 설정값을 사용한다. 로컬 5432 포트가 이미 사용 중이면 기존 서비스를 중지하거나 [compose.yaml](compose.yaml)의 호스트 포트를 변경하고 DataGrip에도 같은 포트를 입력한다. 컨테이너 간 연결은 계속 `postgres:5432`를 사용하며 기존 데이터 볼륨은 유지된다.
+
 ## 검증·관리
 
 | 명령 | 용도 |
