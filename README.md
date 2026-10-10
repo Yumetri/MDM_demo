@@ -48,3 +48,5 @@ PostgreSQL은 볼륨에 데이터를 보존하며, 기존 볼륨의 DB 계정·�
 - [기능 문서 템플릿](docs/templates/feature.md)
 - [개발·아키텍처·리뷰 규칙](AGENTS.md)
 - [API 규약 초안](docs/api-conventions.md)
+
+기능맵에는 구현 전 합의한 업무 규칙도 포함하며, 해당 문서에 구현 전 요구사항임을 표시한다.
