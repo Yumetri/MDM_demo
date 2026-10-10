@@ -5,7 +5,7 @@
 - 사용자와 목적: 개발자가 API 명세를 열람하고 Scalar UI에서 요청을 실행한다. 도구는 OpenAPI 스키마를 조회할 수 있다.
 - 처리 결과: 문서 UI의 HTML 또는 OpenAPI JSON을 제공한다.
 - 진입점: Scalar UI `GET /docs`, OpenAPI 스키마 `GET /openapi.json`.
-- API 계약: [API 규약](../../api-conventions.md)은 공통 계약 초안이다. 문서 UI 제공이 초안 전체의 구현을 의미하지 않는다.
+- API 계약: [API 규약](../../api-conventions.md)은 Company와 공통 응답·오류 계약을 관리한다. 각 기능의 구현 범위는 해당 기능 문서에서 확인한다.
 
 ## 업무 규칙과 제약
 
@@ -46,6 +46,8 @@
 | 검증 | [smoke.py — check_api_docs()](../../../scripts/smoke.py) | Scalar 초기화 코드와 스키마 경로, 헬스 응답 정의, 문서 UI의 OpenAPI 작업 목록 제외, 기존 문서 경로 비활성화 확인 |
 
 - 검증 진입점: [Makefile](../../../Makefile)의 `make smoke`. 실행 전제와 번들 버전 관리 위치는 [프로젝트 README](../../../README.md)를 따른다.
+- 실제 브라우저에서 Company 생성·조회·수정·삭제 요청과 응답을 확인했다. [API 계약 테스트](../../../tests/api/test_company.py)는 구체적인 OpenAPI 스키마도 검사한다.
+- Company CRUD·CompanyLog 조회에 성공·실패·경계값 요청/응답과 경로·쿼리 예제를 제공한다. 각 예제는 상태·사전 조건을 설명하고 동적인 UUID·cursor 복사 절차를 안내한다. [예제 테스트](../../../tests/api/test_openapi_examples.py)는 OpenAPI 예제를 실제 HTTP 요청으로 실행한다.
 - 검증 공백: 스모크 검사는 실제 브라우저 렌더링·CDN 로딩·UI 요청 실행·OpenAPI 메모리 재사용을 검사하지 않는다. 전용 브라우저 자동화 테스트는 없다.
 
 ## 관련 기능

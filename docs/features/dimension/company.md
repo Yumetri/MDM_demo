@@ -1,79 +1,79 @@
 # Company
 
-이 문서는 사용자와 합의한 구현 전 요구사항이다. Company 도메인·DB·API·테스트는 아직 구현되지 않았다.
-
-구현 작업은 [Company 하위 이슈 #2](https://github.com/Yumetri/MDM_demo/issues/2)에서 추적하며, 공통 원칙은 [상위 이슈 #1](https://github.com/Yumetri/MDM_demo/issues/1)을 따른다.
+Company CRUD와 변경 이력을 구현했다. 작업은 [이슈 #2](https://github.com/Yumetri/MDM_demo/issues/2), 공통 원칙은 [이슈 #1](https://github.com/Yumetri/MDM_demo/issues/1)에서 추적한다.
 
 ## 제공 기능
 
-- 의미: 제품을 출시하는 업체를 나타내는 차원 데이터다.
-- 관리 대상: 회사명과 회사 고유코드.
-- 기능: Company 데이터의 등록·조회·수정·삭제.
-- 진입점: API 경로·메서드는 미정.
-- API 계약: [API 규약](../../api-conventions.md)을 참조한다. 전체 계약은 초안이며, 자동 생성 실패 메시지는 해당 문서의 Dimension 코드 자동 생성 실패 공통 안내를 따른다.
+- 제품을 출시하는 업체의 회사명과 고유코드를 등록·조회·수정·삭제한다.
+- 진입점은 `/companies` 및 `/companies/{company_id}`이며 [API 규약](../../api-conventions.md)에서 메서드·요청·응답·오류 계약을 관리한다.
+- 로컬 개발용 기능이다. 인증·권한, 검색·선택 정렬, Company 캐시는 구현 범위 밖이다. 이력 조회는 [CompanyLog](company-log.md)에서 제공한다.
 
 ## 업무 규칙과 제약
 
-아래 규칙의 근거는 사용자와의 요구사항 합의이며, 구현 근거는 구현 후 연결한다.
+| 조건 | 규칙·결과 | 구현 근거 |
+| --- | --- | --- |
+| 회사명 | 양끝 공백 제거 후 1~200자, 내부 공백 보존, 중복 허용 | `CompanyName` |
+| 직접 입력 코드 | ASCII 영문 3자, 공백 불허, 대문자 정규화 | `CompanyCode` |
+| 코드 생략 | 회사명의 ASCII 영문만 추출해 앞 3자를 대문자로 생성 | `CompanyCode.from_name` |
+| 자동 생성 실패 | 영문이 3자 미만이거나 생성 코드가 중복이면 실패, 임의 재생성 없음 | 도메인·Company 유스케이스 |
+| 코드 유일성 | Company 테이블 안에서 유일함. `abc`와 `ABC`는 같은 코드 | `uq_companies_code` |
+| 등록 후 코드 변경 | 금지 | 불변 코드·수정 요청 스키마 |
+| 회사명 수정 | 현재 이름을 변경하고 조회에 반영 | `Company.rename` |
+| 같은 이름으로 수정 | 성공 응답, 데이터·수정 시각·이력 변경 없음 | `Company.rename`, 유스케이스 |
+| 삭제 | 물리 삭제, 이력 보존, 삭제 코드 재사용 시 새 식별자 부여 | 삭제·등록 유스케이스 |
+| 생성·수정·삭제 | Company와 이전·이후 값의 로그를 함께 저장 | 동일 UoW |
 
-| 조건 | 적용되는 규칙·결과 |
-| --- | --- |
-| 회사명 등록 | 중복 허용 |
-| 코드 저장 | Company 테이블 안에서 유일해야 함 |
-| 코드 직접 입력 | 영문 알파벳 3글자로 제한하고 대문자로 변환 |
-| 코드 중복 판정 | 대문자로 정규화한 값을 비교하므로 `abc`와 `ABC`는 같은 코드 |
-| 코드 생략 | 도메인 내부에서 회사명으로 자동 생성 |
-| 코드 자동 생성 | 회사명에서 영문 이외의 문자를 제외한 뒤 앞 3글자를 대문자로 변환 |
-| 자동 생성 코드 중복 | 등록 실패, 직접 코드 입력 요청. 숫자 등을 붙여 임의 재생성하지 않음 |
-| 자동 생성에 필요한 영문이 3개 미만 | 등록 실패, 직접 코드 입력 요청. 영문으로 임의 번역하거나 글자를 채우지 않음 |
-| 등록 후 코드 변경 | 허용하지 않음 |
-| 회사명 수정 | 현재 행의 이름을 변경하고 조회에는 현재 이름을 사용 |
-| 생성·수정·삭제 | DimensionLog에 이전 값과 이후 값을 기록 |
+자동 생성 예: `Samsung` → `SAM`, `LG Electronics` → `LGE`, `3M Korea` → `MKO`. `삼성전자`·`LG`는 실패한다. 이 규칙을 다른 차원에 자동 적용하지 않는다.
 
-자동 생성 예:
-
-| 회사명 | 결과 |
-| --- | --- |
-| `Samsung` | `SAM` |
-| `LG Electronics` | `LGE` |
-| `3M Korea` | `MKO` |
-| `삼성전자` | 생성 실패 |
-| `LG` | 생성 실패 |
-
-회사명 유효성·길이, 빈 코드·공백 입력 처리, 직접 입력한 코드의 중복 오류 계약, 삭제 정책은 미정이다. 이 Company 규칙을 다른 차원에 자동 적용하지 않는다.
+입력 문자열 중 PostgreSQL text에 저장할 수 없는 NUL과 UTF-8로 표현할 수 없는 단독 surrogate는 도메인에서 거부한다. 정상 한글·이모지는 보존한다. 코드 null·빈 값 처리 등 HTTP 입력 계약은 API 규약을 따른다.
 
 ## 처리 흐름
 
-합의한 업무 흐름이며 실제 처리 코드는 아직 없다.
-
-1. 등록 시 코드가 입력되면 형식을 검사하고 대문자로 변환한다. 생략되면 회사명에서 코드를 자동 생성한다.
-2. 정규화된 코드의 유일성을 확인한다. 자동 생성 실패 조건에 해당하면 등록하지 않고 직접 입력을 요청한다.
-3. 등록은 하나의 UoW 안에서 회사명·코드와 생성 이력을 저장하고 함께 커밋한다.
-4. 수정·삭제도 Company 변경과 이전·이후 값의 로그 저장을 같은 UoW의 트랜잭션에서 처리한다. 둘 중 하나라도 실패하면 함께 롤백한다.
+1. 도메인이 이름·직접 코드를 검증·정규화하거나 자동 코드를 생성한다.
+2. 요청마다 새 UoW와 세션을 사용한다. 등록 시 Company 저장·flush로 코드 유일성을 검사한다.
+3. 수정·삭제는 행 잠금을 획득한 현재 값을 읽고 이전 스냅샷을 만든다.
+4. 도메인 메서드로 변경한 뒤 Company와 CompanyLog를 같은 세션으로 저장한다.
+5. 유스케이스가 명시적으로 commit한다. 조회와 변경 없는 수정은 commit하지 않고 정리한다.
 
 ## 데이터와 트랜잭션
 
-- 업무 데이터: 회사명과 회사 고유코드. 내부 식별자와 물리 스키마는 미정.
-- 로그: 생성은 이전 값 없음 → 생성된 값, 수정은 이전 값 → 변경된 값, 삭제는 삭제 전 값 → 이후 값 없음.
-- 트랜잭션: Company 변경과 DimensionLog 저장을 하나의 UoW·DB 트랜잭션으로 묶는다. 유스케이스가 `async with uow`로 시작하고 두 저장이 성공한 뒤 `await uow.commit()`을 호출한다.
-- Company와 DimensionLog Repository는 같은 UoW의 세션을 공유한다. 실제 commit·rollback·세션 종료는 UoW 구현만 수행한다. 미커밋 종료·예외에는 함께 롤백하며, 취소·commit 실패에도 세션을 정리한다.
-- 로그의 저장 구조·스냅샷 범위·추가 필드와 값이 바뀌지 않은 수정 요청의 처리도 미정.
-- 유일성의 DB 제약 구현, 동시 요청 처리와 실패 시 롤백 방식은 미구현.
+- `companies`: UUID v4 PK, 회사명, 코드, UTC 생성·수정 시각. 도메인 객체와 ORM 모델은 Mapper로 변환한다.
+- `company_logs`: [CompanyLog](company-log.md) 참조. `company_id`는 NOT NULL UUID이며 FK 없이 삭제 후에도 보존한다.
+- 코드 UNIQUE·코드 형식·이름 길이 제약은 DB에도 둔다. 이름 양끝의 유니코드 공백 정리는 도메인에서 수행하며 DB의 `btrim` 제약은 일반 공백을 검사한다.
+- 동시 수정·삭제는 `SELECT … FOR UPDATE`로 직렬 처리한다. 나중에 처리된 수정이 최종 이름이 되며 오래된 클라이언트 값을 별도로 거부하지 않는다.
+- 알려진 코드 UNIQUE 위반만 중복으로 변환한다. 다른 DB 오류는 중복으로 오인하지 않는다.
+- 미커밋 종료·예외에는 rollback한다. 취소 중에도 정리 작업이 끝날 때까지 기다려 세션을 닫는다. commit 응답이 네트워크에서 유실된 경우 결과 확정·자동 재시도를 제공하지 않는다.
 
 ## 조회와 인덱스
 
-쿼리와 인덱스는 미구현이다. Company 코드 유일성은 요구사항이며, 인덱스 정의나 실행 계획 확인을 완료한 것은 아니다. 목록 필터·정렬·cursor 기준은 미정이다.
+| 조회 | 인덱스 | 역할 |
+| --- | --- | --- |
+| 단건·수정·삭제 대상 | PK(id) | 식별자 검색과 대상 행 잠금 |
+| 코드 유일성 | UNIQUE(code) | 동시 등록에서도 중복 방지 |
+| 목록 | (created_at, id) | 고정 정렬 및 keyset 경계 조회 지원 |
+
+cursor 구현·경계와 목록의 변경 중 일관성 범위는 API 규약을 따른다. 실제 쿼리 실행은 통합 테스트로 확인했다. 대표 규모 데이터에서의 EXPLAIN·성능 측정은 미확인이며 인덱스 사용을 단정하지 않는다.
 
 ## 캐시
 
-적용 여부와 정책은 미정이며 미구현이다.
+Company 조회에는 캐시를 적용하지 않는다. 모두 PostgreSQL에서 읽으며 키·TTL·무효화·Redis 장애 fallback은 해당하지 않는다. 기존 Redis 서비스는 유지한다.
 
 ## 구현과 검증
 
-구현 코드와 테스트는 아직 없다. 구현 시 코드 정규화·자동 생성·실패 조건·회사명 중복 허용·코드 변경 금지·현재 이름 조회·로그 기록을 검증하고 코드·테스트 링크를 연결한다. Company와 로그의 함께 커밋·롤백, 로그 저장 실패, 취소·commit 실패 시 UoW 정리도 검증한다. 실행 진입점은 [Makefile](../../../Makefile)에 추가하며 검증 기준은 [AGENTS.md](../../../AGENTS.md)를 따른다.
+| 구분 | 근거 |
+| --- | --- |
+| 도메인 | [Company](../../../src/mdm_demo/domain/entities/company.py), [이름](../../../src/mdm_demo/domain/value_objects/company_name.py), [코드](../../../src/mdm_demo/domain/value_objects/company_code.py) |
+| 유스케이스 | [CompanyUseCases](../../../src/mdm_demo/application/use_cases/company.py) |
+| DB·Mapper | [모델](../../../src/mdm_demo/infrastructure/persistence/models/company.py), [Repository](../../../src/mdm_demo/infrastructure/persistence/repositories/company_repository.py), [Mapper](../../../src/mdm_demo/infrastructure/persistence/mappers/company_mapper.py) |
+| 트랜잭션·스키마 | [UoW](../../../src/mdm_demo/infrastructure/persistence/unit_of_work.py), [초기 마이그레이션](../../../migrations/versions/0001_company_dimension.py), [로그 분리](../../../migrations/versions/0002_split_company_logs.py) |
+| HTTP | [라우터](../../../src/mdm_demo/presentation/routers/company.py), [스키마](../../../src/mdm_demo/presentation/schemas/company.py) |
+| 단위 테스트 | [도메인](../../../tests/unit/domain/test_company.py), [유스케이스](../../../tests/unit/application/test_company.py), [cursor](../../../tests/unit/application/test_cursor.py) |
+| 실제 PostgreSQL 검증 | [영속성·원자성·동시성](../../../tests/integration/persistence/test_company.py), [API 계약](../../../tests/api/test_company.py) |
+
+실행 진입점과 테스트 DB 격리는 [README](../../../README.md)의 검증 안내를 따른다. 캐시·인증과 실네트워크 commit 응답 유실 복구는 검증 대상이 아니다.
 
 ## 관련 기능
 
-다른 차원과의 구체적인 참조 관계는 미정이다. 모든 차원에 적용할 DimensionLog 공통 요구사항은 [이슈 #1](https://github.com/Yumetri/MDM_demo/issues/1)에서 관리한다.
-
-[Dimension 목차](README.md)
+- [CompanyLog](company-log.md): 변경과 함께 커밋하는 이력.
+- 다른 차원과의 구체적인 참조 관계는 미정이다. 향후 참조가 추가되면 참조 중 삭제 제한을 해당 기능과 함께 설계한다.
+- [Dimension 목차](README.md)

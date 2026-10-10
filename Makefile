@@ -16,7 +16,7 @@ format-check: check-environment
 	uv run --locked ruff format --check .
 
 typecheck: check-environment
-	uv run --locked pyrefly check
+	uv run --locked pyrefly check --min-severity warn
 
 format: check-environment
 	uv run --locked ruff format .
@@ -43,3 +43,27 @@ smoke:
 
 check-container:
 	docker compose run --build --rm --no-deps api make check
+
+.PHONY: migrate migration-check test test-unit test-container
+
+migrate:
+	uv run --locked alembic upgrade head
+
+migration-check:
+	uv run --locked alembic check
+
+test-unit:
+	uv run --locked pytest tests/unit
+
+test:
+	@test "$$POSTGRES_DB" = "mdm_test" || { echo "POSTGRES_DB must be mdm_test" >&2; exit 1; }
+	$(MAKE) migrate
+	$(MAKE) migration-check
+	uv run --locked pytest tests
+
+test-container:
+	docker compose --profile test run --build --rm test
+
+.PHONY: test-stop
+test-stop:
+	docker compose --profile test stop postgres-test

@@ -18,7 +18,9 @@ RUN uv sync --locked && rm -rf /tmp/uv-cache
 RUN useradd --create-home --uid 10001 app && chown -R app:app /app
 COPY --chown=app:app src ./src
 COPY --chown=app:app scripts ./scripts
-COPY --chown=app:app Makefile ./Makefile
+COPY --chown=app:app Makefile alembic.ini ./
+COPY --chown=app:app migrations ./migrations
+COPY --chown=app:app tests ./tests
 USER app
 
 EXPOSE 8000

@@ -64,9 +64,15 @@ def main() -> None:
     with urlopen("http://127.0.0.1:8000/health", timeout=5) as response:
         if response.status != 204:
             raise RuntimeError("API liveness check failed")
+    with urlopen("http://127.0.0.1:8000/companies?limit=1", timeout=5) as response:
+        payload = json.load(response)
+        if response.status != 200 or not isinstance(payload["data"], list):
+            raise RuntimeError("Company query failed")
+        if payload["meta"]["request_id"] != response.headers["X-Request-ID"]:
+            raise RuntimeError("Company request ID mismatch")
     check_api_docs()
     asyncio.run(check_dependencies())
-    print("OK: API /health, Scalar /docs, OpenAPI, PostgreSQL SELECT 1, Redis PING")
+    print("OK: API /health, Company query, Scalar /docs, OpenAPI, PostgreSQL SELECT 1, Redis PING")
 
 
 if __name__ == "__main__":

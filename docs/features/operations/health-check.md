@@ -5,7 +5,7 @@
 - 사용자와 목적: 운영 도구가 서비스 프로세스의 HTTP 응답 여부를 확인한다.
 - 처리 결과: 본문 없는 성공 응답을 반환한다.
 - 진입점: `GET /health`.
-- API 계약: [API 규약](../../api-conventions.md)은 공통 계약 초안이다. 현재 응답 정의는 아래 구현과 [OpenAPI](../api-documentation/api-reference.md)에서 확인한다.
+- API 계약: [API 규약](../../api-conventions.md)은 공통 응답·오류 계약을 관리한다. 현재 응답 정의는 아래 구현과 [OpenAPI](../api-documentation/api-reference.md)에서 확인한다.
 
 ## 업무 규칙과 제약
 
