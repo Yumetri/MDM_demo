@@ -3,7 +3,7 @@ from uuid import UUID
 from sqlalchemy import select, tuple_
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from mdm_demo.application.ports.cursor import CountryLogBoundary
+from mdm_demo.application.ports.cursors.country import CountryLogBoundary
 from mdm_demo.domain.entities.country_log import CountryLog
 from mdm_demo.infrastructure.persistence.mappers.country_log_mapper import to_domain, to_model
 from mdm_demo.infrastructure.persistence.models.country_log import CountryLogModel

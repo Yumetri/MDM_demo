@@ -3,7 +3,8 @@ from uuid import uuid4
 
 import pytest
 
-from mdm_demo.application.errors import ApplicationError, DuplicateModelCode
+from mdm_demo.application.errors import ApplicationError
+from mdm_demo.application.errors.model import DuplicateModelCode
 from mdm_demo.application.use_cases.model import ModelUseCases
 from mdm_demo.domain.entities.model import Model
 

@@ -17,8 +17,9 @@
 | `app.py` | FastAPI 생성, 구체 구현체 조립, 라우터 등록 |
 | `domain/entities/` | Entity와 Aggregate Root |
 | `domain/value_objects/` | 불변 Value Object |
-| `domain/services/`, `domain/errors.py` | 여러 도메인 객체의 업무 규칙, HTTP와 무관한 오류 |
+| `domain/services/`, `domain/errors/` | 여러 도메인 객체의 업무 규칙, HTTP와 무관한 오류 |
 | `application/use_cases/`, `application/dto/` | 유스케이스 실행·UoW 경계, 입력·출력 DTO |
+| `application/errors/`, `application/ports/cursors/` | 공통 오류와 차원별 오류, 차원별 cursor 타입·인터페이스 |
 | `application/ports/repositories/` | Aggregate별 Repository 인터페이스 |
 | `application/ports/unit_of_work.py`, `application/ports/cache.py` | 비동기 UoW·캐시 인터페이스 |
 | `infrastructure/persistence/models/` | SQLAlchemy 영속성 모델 |
@@ -27,9 +28,10 @@
 | `infrastructure/persistence/session.py`, `infrastructure/persistence/unit_of_work.py` | 엔진·세션 팩토리, SQLAlchemy UoW 구현 |
 | `infrastructure/cache/redis_cache.py` | Redis 캐시 구현 |
 | `presentation/routers/`, `presentation/schemas/` | FastAPI 엔드포인트, HTTP 요청·응답 모델 |
-| `presentation/dependencies.py` | 조립된 의존성을 전달하는 FastAPI 어댑터 |
+| `presentation/dependencies/` | 조립된 의존성을 전달하는 FastAPI 어댑터 |
 | `presentation/error_catalog.py`, `presentation/exception_handlers.py` | API 오류 코드·메시지·상태 매핑, 공통 예외 응답 변환 |
 
+- 오류·cursor·의존성 제공자는 차원별 모듈에 둔다. 패키지 `__init__.py`에는 공통 정의만 두며 차원별 정의를 일괄 재노출하지 않는다.
 - Repository·Mapper 파일명은 `<aggregate>_repository.py`, `<aggregate>_mapper.py`를 사용한다. 업무 로직을 담는 최상위 `utils/`, `common/`, `helpers.py`는 만들지 않는다.
 - 클린 아키텍처의 프로젝트 내부 의존성은 `domain → domain`, `application → domain/application`, `infrastructure → domain/application/infrastructure`, `presentation → application/presentation`만 허용한다. `app.py`는 전체 계층을 조립하되 업무 규칙을 구현하지 않는다.
 - `domain`·`application`에서 FastAPI·SQLAlchemy·Redis 클라이언트를 import하지 않는다. `presentation`에서 SQL·Redis를 직접 호출하거나 인프라 구현체를 생성하지 않는다.

@@ -3,7 +3,7 @@ from uuid import UUID
 
 from mdm_demo.application.dto.company_log import CompanyLogDTO, CompanyLogPage
 from mdm_demo.application.errors import ApplicationError
-from mdm_demo.application.ports.cursor import CompanyLogBoundary, CompanyLogCursor
+from mdm_demo.application.ports.cursors.company import CompanyLogBoundary, CompanyLogCursor
 from mdm_demo.application.ports.unit_of_work import UnitOfWork
 
 

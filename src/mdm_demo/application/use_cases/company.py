@@ -3,12 +3,14 @@ from contextlib import contextmanager
 from uuid import UUID
 
 from mdm_demo.application.dto.company import CompanyDTO, CompanyPage
-from mdm_demo.application.errors import ApplicationError, DuplicateCompanyCode
-from mdm_demo.application.ports.cursor import CompanyBoundary, CompanyCursor
+from mdm_demo.application.errors import ApplicationError
+from mdm_demo.application.errors.company import DuplicateCompanyCode
+from mdm_demo.application.ports.cursors.company import CompanyBoundary, CompanyCursor
 from mdm_demo.application.ports.unit_of_work import UnitOfWork
 from mdm_demo.domain.entities.company import Company
 from mdm_demo.domain.entities.company_log import CompanyLog
-from mdm_demo.domain.errors import AutoCodeUnavailable, InvalidCompanyValue
+from mdm_demo.domain.errors import AutoCodeUnavailable
+from mdm_demo.domain.errors.company import InvalidCompanyValue
 
 
 @contextmanager

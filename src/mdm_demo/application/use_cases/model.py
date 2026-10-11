@@ -3,12 +3,14 @@ from contextlib import contextmanager
 from uuid import UUID
 
 from mdm_demo.application.dto.model import ModelDTO, ModelPage
-from mdm_demo.application.errors import ApplicationError, DuplicateModelCode
-from mdm_demo.application.ports.cursor import ModelBoundary, ModelCursor
+from mdm_demo.application.errors import ApplicationError
+from mdm_demo.application.errors.model import DuplicateModelCode
+from mdm_demo.application.ports.cursors.model import ModelBoundary, ModelCursor
 from mdm_demo.application.ports.unit_of_work import UnitOfWork
 from mdm_demo.domain.entities.model import Model
 from mdm_demo.domain.entities.model_log import ModelLog
-from mdm_demo.domain.errors import AutoCodeUnavailable, InvalidModelValue
+from mdm_demo.domain.errors import AutoCodeUnavailable
+from mdm_demo.domain.errors.model import InvalidModelValue
 
 
 @contextmanager

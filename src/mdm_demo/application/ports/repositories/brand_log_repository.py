@@ -1,7 +1,7 @@
 from typing import Protocol
 from uuid import UUID
 
-from mdm_demo.application.ports.cursor import BrandLogBoundary
+from mdm_demo.application.ports.cursors.brand import BrandLogBoundary
 from mdm_demo.domain.entities.brand_log import BrandLog
 
 

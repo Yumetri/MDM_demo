@@ -7,7 +7,7 @@ from datetime import UTC, datetime
 from uuid import UUID
 
 from mdm_demo.application.errors import ApplicationError
-from mdm_demo.application.ports.cursor import ModelBoundary
+from mdm_demo.application.ports.cursors.model import ModelBoundary
 
 
 class SignedModelCursor:

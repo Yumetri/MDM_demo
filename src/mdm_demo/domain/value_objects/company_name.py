@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 
-from mdm_demo.domain.errors import InvalidCompanyValue
+from mdm_demo.domain.errors.company import InvalidCompanyValue
 
 
 @dataclass(frozen=True)

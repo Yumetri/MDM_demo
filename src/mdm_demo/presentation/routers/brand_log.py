@@ -3,7 +3,8 @@ from uuid import UUID
 
 from fastapi import APIRouter, Path, Query
 
-from mdm_demo.presentation.dependencies import BrandLogService, RequestID
+from mdm_demo.presentation.dependencies import RequestID
+from mdm_demo.presentation.dependencies.brand import BrandLogService
 from mdm_demo.presentation.schemas.brand_examples import (
     CURSOR_DESCRIPTION,
     LIMIT_EXAMPLES,

@@ -3,7 +3,8 @@ from uuid import UUID
 
 from fastapi import APIRouter, Path, Query
 
-from mdm_demo.presentation.dependencies import ModelLogService, RequestID
+from mdm_demo.presentation.dependencies import RequestID
+from mdm_demo.presentation.dependencies.model import ModelLogService
 from mdm_demo.presentation.schemas.common import (
     ListMeta,
     ListResponse,

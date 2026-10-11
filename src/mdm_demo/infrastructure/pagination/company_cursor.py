@@ -7,7 +7,7 @@ from datetime import UTC, datetime
 from uuid import UUID
 
 from mdm_demo.application.errors import ApplicationError
-from mdm_demo.application.ports.cursor import CompanyBoundary
+from mdm_demo.application.ports.cursors.company import CompanyBoundary
 
 
 class SignedCompanyCursor:

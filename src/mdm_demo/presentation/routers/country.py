@@ -3,7 +3,8 @@ from uuid import UUID
 
 from fastapi import APIRouter, Body, Path, Query, Response
 
-from mdm_demo.presentation.dependencies import CountryService, RequestID
+from mdm_demo.presentation.dependencies import RequestID
+from mdm_demo.presentation.dependencies.country import CountryService
 from mdm_demo.presentation.error_catalog import ERROR_RESPONSES
 from mdm_demo.presentation.schemas.common import (
     ListMeta,

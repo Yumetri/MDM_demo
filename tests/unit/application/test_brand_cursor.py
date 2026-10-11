@@ -8,7 +8,7 @@ from uuid import uuid4
 import pytest
 
 from mdm_demo.application.errors import ApplicationError
-from mdm_demo.application.ports.cursor import BrandBoundary
+from mdm_demo.application.ports.cursors.brand import BrandBoundary
 from mdm_demo.infrastructure.pagination.brand_cursor import SignedBrandCursor
 
 

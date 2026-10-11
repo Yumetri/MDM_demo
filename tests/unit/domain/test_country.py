@@ -9,7 +9,7 @@ import pytest
 
 from mdm_demo.domain.entities.country import Country
 from mdm_demo.domain.entities.country_log import CountryLog
-from mdm_demo.domain.errors import InvalidCountryValue
+from mdm_demo.domain.errors.country import InvalidCountryValue
 from mdm_demo.domain.value_objects.country_code import CountryCode
 from mdm_demo.domain.value_objects.country_name import CountryName
 

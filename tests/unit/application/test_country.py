@@ -3,7 +3,8 @@ from uuid import uuid4
 
 import pytest
 
-from mdm_demo.application.errors import ApplicationError, DuplicateCountryCode, DuplicateCountryName
+from mdm_demo.application.errors import ApplicationError
+from mdm_demo.application.errors.country import DuplicateCountryCode, DuplicateCountryName
 from mdm_demo.application.use_cases.country import CountryUseCases
 from mdm_demo.domain.entities.country import Country
 

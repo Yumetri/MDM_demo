@@ -1,7 +1,7 @@
 from typing import Protocol
 from uuid import UUID
 
-from mdm_demo.application.ports.cursor import CountryBoundary
+from mdm_demo.application.ports.cursors.country import CountryBoundary
 from mdm_demo.domain.entities.country import Country
 
 

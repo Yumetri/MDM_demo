@@ -3,12 +3,14 @@ from contextlib import contextmanager
 from uuid import UUID
 
 from mdm_demo.application.dto.brand import BrandDTO, BrandPage
-from mdm_demo.application.errors import ApplicationError, DuplicateBrandCode
-from mdm_demo.application.ports.cursor import BrandBoundary, BrandCursor
+from mdm_demo.application.errors import ApplicationError
+from mdm_demo.application.errors.brand import DuplicateBrandCode
+from mdm_demo.application.ports.cursors.brand import BrandBoundary, BrandCursor
 from mdm_demo.application.ports.unit_of_work import UnitOfWork
 from mdm_demo.domain.entities.brand import Brand
 from mdm_demo.domain.entities.brand_log import BrandLog
-from mdm_demo.domain.errors import AutoCodeUnavailable, InvalidBrandValue
+from mdm_demo.domain.errors import AutoCodeUnavailable
+from mdm_demo.domain.errors.brand import InvalidBrandValue
 
 
 @contextmanager

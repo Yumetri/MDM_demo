@@ -1,6 +1,6 @@
 from uuid import UUID
 
-from mdm_demo.application.ports.cursor import CompanyBoundary, CompanyLogBoundary
+from mdm_demo.application.ports.cursors.company import CompanyBoundary, CompanyLogBoundary
 from mdm_demo.infrastructure.pagination.company_cursor import SignedCompanyCursor
 
 

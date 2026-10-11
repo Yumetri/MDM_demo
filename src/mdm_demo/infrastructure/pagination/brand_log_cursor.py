@@ -1,6 +1,6 @@
 from uuid import UUID
 
-from mdm_demo.application.ports.cursor import BrandBoundary, BrandLogBoundary
+from mdm_demo.application.ports.cursors.brand import BrandBoundary, BrandLogBoundary
 from mdm_demo.infrastructure.pagination.brand_cursor import SignedBrandCursor
 
 

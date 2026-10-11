@@ -4,8 +4,8 @@ from sqlalchemy import delete, select, tuple_, update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from mdm_demo.application.errors import DuplicateBrandCode
-from mdm_demo.application.ports.cursor import BrandBoundary
+from mdm_demo.application.errors.brand import DuplicateBrandCode
+from mdm_demo.application.ports.cursors.brand import BrandBoundary
 from mdm_demo.domain.entities.brand import Brand
 from mdm_demo.infrastructure.persistence.mappers import brand_mapper
 from mdm_demo.infrastructure.persistence.models.brand import BrandModel

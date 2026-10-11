@@ -6,8 +6,8 @@ from sqlalchemy import delete, select, tuple_, update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from mdm_demo.application.errors import DuplicateCountryCode, DuplicateCountryName
-from mdm_demo.application.ports.cursor import CountryBoundary
+from mdm_demo.application.errors.country import DuplicateCountryCode, DuplicateCountryName
+from mdm_demo.application.ports.cursors.country import CountryBoundary
 from mdm_demo.domain.entities.country import Country
 from mdm_demo.infrastructure.persistence.mappers import country_mapper
 from mdm_demo.infrastructure.persistence.models.country import CountryModel

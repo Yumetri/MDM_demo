@@ -1,7 +1,7 @@
 from typing import Protocol
 from uuid import UUID
 
-from mdm_demo.application.ports.cursor import CompanyBoundary
+from mdm_demo.application.ports.cursors.company import CompanyBoundary
 from mdm_demo.domain.entities.company import Company
 
 

@@ -5,7 +5,7 @@ from uuid import uuid4
 import pytest
 
 from mdm_demo.application.errors import ApplicationError
-from mdm_demo.application.ports.cursor import CompanyLogBoundary
+from mdm_demo.application.ports.cursors.company import CompanyLogBoundary
 from mdm_demo.application.use_cases.company_log import CompanyLogUseCases
 from mdm_demo.infrastructure.pagination.company_log_cursor import SignedCompanyLogCursor
 
