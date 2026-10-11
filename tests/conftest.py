@@ -1,5 +1,6 @@
 import os
-from collections.abc import AsyncIterator
+from collections.abc import AsyncGenerator
+from contextlib import asynccontextmanager
 
 import pytest
 from httpx import ASGITransport, AsyncClient
@@ -7,148 +8,63 @@ from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, async_sessionmaker
 
 from mdm_demo.app import create_app
-from mdm_demo.application.use_cases.brand import BrandUseCases
-from mdm_demo.application.use_cases.brand_log import BrandLogUseCases
-from mdm_demo.application.use_cases.company import CompanyUseCases
-from mdm_demo.application.use_cases.company_log import CompanyLogUseCases
-from mdm_demo.application.use_cases.country import CountryUseCases
-from mdm_demo.application.use_cases.country_log import CountryLogUseCases
-from mdm_demo.application.use_cases.model import ModelUseCases
-from mdm_demo.application.use_cases.model_log import ModelLogUseCases
-from mdm_demo.infrastructure.pagination.brand_cursor import SignedBrandCursor
-from mdm_demo.infrastructure.pagination.brand_log_cursor import SignedBrandLogCursor
-from mdm_demo.infrastructure.pagination.company_cursor import SignedCompanyCursor
-from mdm_demo.infrastructure.pagination.company_log_cursor import SignedCompanyLogCursor
-from mdm_demo.infrastructure.pagination.country_cursor import SignedCountryCursor
-from mdm_demo.infrastructure.pagination.country_log_cursor import SignedCountryLogCursor
-from mdm_demo.infrastructure.pagination.model_cursor import SignedModelCursor
-from mdm_demo.infrastructure.pagination.model_log_cursor import SignedModelLogCursor
+from mdm_demo.composition.runtime import RuntimeResources
+from mdm_demo.infrastructure.persistence.models.base import Base
 from mdm_demo.infrastructure.persistence.session import create_session_factory, database_url
-from mdm_demo.infrastructure.persistence.units_of_work.brand import SqlAlchemyBrandUnitOfWork
-from mdm_demo.infrastructure.persistence.units_of_work.company import SqlAlchemyCompanyUnitOfWork
-from mdm_demo.infrastructure.persistence.units_of_work.country import SqlAlchemyCountryUnitOfWork
-from mdm_demo.infrastructure.persistence.units_of_work.model import SqlAlchemyModelUnitOfWork
+
+pytest_plugins = (
+    "tests.fixtures.company",
+    "tests.fixtures.model",
+    "tests.fixtures.country",
+    "tests.fixtures.brand",
+)
 
 
 @pytest.fixture
-async def database() -> AsyncIterator[tuple[AsyncEngine, async_sessionmaker[AsyncSession]]]:
+def signing_key() -> str:
+    return "test-only-signing-key-with-at-least-32-bytes"
+
+
+@pytest.fixture
+async def database() -> AsyncGenerator[tuple[AsyncEngine, async_sessionmaker[AsyncSession]]]:
     if os.environ.get("POSTGRES_DB") != "mdm_test":
         pytest.fail("Integration/API tests require isolated POSTGRES_DB=mdm_test")
     engine, factory = create_session_factory(database_url())
     try:
         async with engine.begin() as connection:
-            await connection.execute(
-                text(
-                    "TRUNCATE companies, company_logs, models, model_logs, "
-                    "countries, country_logs, brands, brand_logs"
-                )
+            # Only application-owned tables; migration history is not part of Base metadata.
+            tables = ", ".join(
+                connection.dialect.identifier_preparer.format_table(table)
+                for table in Base.metadata.sorted_tables
             )
+            if tables:
+                await connection.execute(text(f"TRUNCATE {tables}"))
         yield engine, factory
     finally:
         await engine.dispose()
 
 
 @pytest.fixture
-def cursor_codec() -> SignedCompanyCursor:
-    return SignedCompanyCursor("test-only-signing-key-with-at-least-32-bytes")
+def runtime_resources(database, signing_key) -> RuntimeResources:
+    return RuntimeResources(database[1], signing_key)
 
 
 @pytest.fixture
-async def service(database, cursor_codec) -> CompanyUseCases:
-    _, factory = database
-    return CompanyUseCases(lambda: SqlAlchemyCompanyUnitOfWork(factory), cursor_codec)
+def app_factory(runtime_resources):
+    @asynccontextmanager
+    async def borrowed_runtime() -> AsyncGenerator[RuntimeResources]:
+        # The database fixture owns the engine, not this application's lifespan.
+        yield runtime_resources
+
+    def build(*, modules=None):
+        return create_app(modules=modules, runtime_factory=borrowed_runtime)
+
+    return build
 
 
 @pytest.fixture
-async def log_service(database) -> CompanyLogUseCases:
-    _, factory = database
-    return CompanyLogUseCases(
-        lambda: SqlAlchemyCompanyUnitOfWork(factory),
-        SignedCompanyLogCursor("test-only-signing-key-with-at-least-32-bytes"),
-    )
-
-
-@pytest.fixture
-def model_cursor_codec() -> SignedModelCursor:
-    return SignedModelCursor("test-only-signing-key-with-at-least-32-bytes")
-
-
-@pytest.fixture
-async def model_service(database, model_cursor_codec) -> ModelUseCases:
-    _, factory = database
-    return ModelUseCases(lambda: SqlAlchemyModelUnitOfWork(factory), model_cursor_codec)
-
-
-@pytest.fixture
-async def model_log_service(database) -> ModelLogUseCases:
-    _, factory = database
-    return ModelLogUseCases(
-        lambda: SqlAlchemyModelUnitOfWork(factory),
-        SignedModelLogCursor("test-only-signing-key-with-at-least-32-bytes"),
-    )
-
-
-@pytest.fixture
-def country_cursor_codec() -> SignedCountryCursor:
-    return SignedCountryCursor("test-only-signing-key-with-at-least-32-bytes")
-
-
-@pytest.fixture
-async def country_service(database, country_cursor_codec) -> CountryUseCases:
-    _, factory = database
-    return CountryUseCases(lambda: SqlAlchemyCountryUnitOfWork(factory), country_cursor_codec)
-
-
-@pytest.fixture
-async def country_log_service(database) -> CountryLogUseCases:
-    _, factory = database
-    return CountryLogUseCases(
-        lambda: SqlAlchemyCountryUnitOfWork(factory),
-        SignedCountryLogCursor("test-only-signing-key-with-at-least-32-bytes"),
-    )
-
-
-@pytest.fixture
-def brand_cursor_codec() -> SignedBrandCursor:
-    return SignedBrandCursor("test-only-signing-key-with-at-least-32-bytes")
-
-
-@pytest.fixture
-async def brand_service(database, brand_cursor_codec) -> BrandUseCases:
-    _, factory = database
-    return BrandUseCases(lambda: SqlAlchemyBrandUnitOfWork(factory), brand_cursor_codec)
-
-
-@pytest.fixture
-async def brand_log_service(database) -> BrandLogUseCases:
-    _, factory = database
-    return BrandLogUseCases(
-        lambda: SqlAlchemyBrandUnitOfWork(factory),
-        SignedBrandLogCursor("test-only-signing-key-with-at-least-32-bytes"),
-    )
-
-
-@pytest.fixture
-async def client(
-    service,
-    log_service,
-    model_service,
-    model_log_service,
-    country_service,
-    country_log_service,
-    brand_service,
-    brand_log_service,
-) -> AsyncIterator[AsyncClient]:
-    app = create_app(
-        service=service,
-        log_service=log_service,
-        model_service=model_service,
-        model_log_service=model_log_service,
-        brand_service=brand_service,
-        brand_log_service=brand_log_service,
-        country_service=country_service,
-        country_log_service=country_log_service,
-    )
+async def client(app_factory) -> AsyncGenerator[AsyncClient]:
+    app = app_factory()
     async with app.router.lifespan_context(app):
         async with AsyncClient(
             transport=ASGITransport(app=app, raise_app_exceptions=False), base_url="http://test"

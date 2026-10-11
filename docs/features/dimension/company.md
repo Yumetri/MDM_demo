@@ -79,3 +79,5 @@ Company 조회에는 캐시를 적용하지 않는다. 모두 PostgreSQL에서 �
 - [Dimension 목차](README.md)
 
 트랜잭션 조립은 [Company UoW](../../../src/mdm_demo/infrastructure/persistence/units_of_work/company.py)를 사용한다. 차원과 로그 저장소는 같은 세션을 공유하고, 세션 정리·commit·rollback은 [공통 구현](../../../src/mdm_demo/infrastructure/persistence/unit_of_work.py)에서 처리한다.
+
+앱 연결은 [Company 조립 모듈](../../../src/mdm_demo/composition/company.py)에서 서비스·라우터를 정의하고 [기능 목록](../../../src/mdm_demo/composition/registry.py)에 등록한다. 테스트는 [차원 fixture](../../../tests/fixtures/company.py)와 공통 앱 팩토리를 사용한다.
