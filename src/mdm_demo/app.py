@@ -1,126 +1,60 @@
-"""Application composition root."""
+"""FastAPI setup; explicit feature composition owns concrete dependencies."""
 
 import logging
-import os
-from collections.abc import AsyncGenerator
+from collections.abc import AsyncGenerator, Sequence
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
+from fastapi.routing import APIRoute, iter_route_contexts
 from scalar_fastapi import AgentScalarConfig, add_scalar_reference
 
-from mdm_demo.application.use_cases.brand import BrandUseCases
-from mdm_demo.application.use_cases.brand_log import BrandLogUseCases
-from mdm_demo.application.use_cases.company import CompanyUseCases
-from mdm_demo.application.use_cases.company_log import CompanyLogUseCases
-from mdm_demo.application.use_cases.country import CountryUseCases
-from mdm_demo.application.use_cases.country_log import CountryLogUseCases
-from mdm_demo.application.use_cases.model import ModelUseCases
-from mdm_demo.application.use_cases.model_log import ModelLogUseCases
-from mdm_demo.infrastructure.pagination.brand_cursor import SignedBrandCursor
-from mdm_demo.infrastructure.pagination.brand_log_cursor import SignedBrandLogCursor
-from mdm_demo.infrastructure.pagination.company_cursor import SignedCompanyCursor
-from mdm_demo.infrastructure.pagination.company_log_cursor import SignedCompanyLogCursor
-from mdm_demo.infrastructure.pagination.country_cursor import SignedCountryCursor
-from mdm_demo.infrastructure.pagination.country_log_cursor import SignedCountryLogCursor
-from mdm_demo.infrastructure.pagination.model_cursor import SignedModelCursor
-from mdm_demo.infrastructure.pagination.model_log_cursor import SignedModelLogCursor
-from mdm_demo.infrastructure.persistence.session import create_session_factory, database_url
-from mdm_demo.infrastructure.persistence.units_of_work.brand import SqlAlchemyBrandUnitOfWork
-from mdm_demo.infrastructure.persistence.units_of_work.company import SqlAlchemyCompanyUnitOfWork
-from mdm_demo.infrastructure.persistence.units_of_work.country import SqlAlchemyCountryUnitOfWork
-from mdm_demo.infrastructure.persistence.units_of_work.model import SqlAlchemyModelUnitOfWork
+from mdm_demo.composition.feature import FeatureModule
+from mdm_demo.composition.registry import DEFAULT_MODULES
+from mdm_demo.composition.runtime import RuntimeFactory, production_runtime
 from mdm_demo.presentation.exception_handlers import register_exception_handlers
 from mdm_demo.presentation.openapi import register_openapi_examples
 from mdm_demo.presentation.request_context import RequestContextMiddleware
-from mdm_demo.presentation.routers.brand import router as brand_router
-from mdm_demo.presentation.routers.brand_log import router as brand_log_router
-from mdm_demo.presentation.routers.company import router as company_router
-from mdm_demo.presentation.routers.company_log import router as company_log_router
-from mdm_demo.presentation.routers.country import router as country_router
-from mdm_demo.presentation.routers.country_log import router as country_log_router
 from mdm_demo.presentation.routers.health import router as health_router
-from mdm_demo.presentation.routers.model import router as model_router
-from mdm_demo.presentation.routers.model_log import router as model_log_router
 from mdm_demo.presentation.schemas.examples import WORKFLOW
 
 
 def create_app(
-    service: CompanyUseCases | None = None,
-    log_service: CompanyLogUseCases | None = None,
-    model_service: ModelUseCases | None = None,
-    model_log_service: ModelLogUseCases | None = None,
-    brand_service: BrandUseCases | None = None,
-    brand_log_service: BrandLogUseCases | None = None,
-    country_service: CountryUseCases | None = None,
-    country_log_service: CountryLogUseCases | None = None,
+    *,
+    modules: Sequence[FeatureModule] | None = None,
+    runtime_factory: RuntimeFactory = production_runtime,
 ) -> FastAPI:
-    """Build default services, or use a complete set of caller-provided services."""
-    services = {
-        "service": service,
-        "log_service": log_service,
-        "model_service": model_service,
-        "country_service": country_service,
-        "model_log_service": model_log_service,
-        "country_log_service": country_log_service,
-        "brand_service": brand_service,
-        "brand_log_service": brand_log_service,
-    }
-    missing = [name for name, value in services.items() if value is None]
-    if missing and len(missing) != len(services):
-        raise ValueError(
-            "Provide all eight services or omit all of them. Missing: " + ", ".join(missing)
-        )
+    selected = tuple(DEFAULT_MODULES if modules is None else modules)
+    names: set[str] = set()
+    state_names: set[str] = set()
+    for module in selected:
+        if not module.name or module.name in names:
+            raise ValueError(f"Duplicate or empty feature name: {module.name}")
+        names.add(module.name)
+        for name in module.state_names:
+            if not name or name in state_names:
+                raise ValueError(f"Duplicate or empty service state: {name}")
+            state_names.add(name)
 
     @asynccontextmanager
     async def lifespan(app: FastAPI) -> AsyncGenerator[None]:
-        if service is not None:
-            app.state.company_use_cases = service
-            app.state.company_log_use_cases = log_service
-            app.state.model_use_cases = model_service
-            app.state.country_use_cases = country_service
-            app.state.model_log_use_cases = model_log_service
-            app.state.country_log_use_cases = country_log_service
-            app.state.brand_use_cases = brand_service
-            app.state.brand_log_use_cases = brand_log_service
-            yield
-            return
-        cursor = SignedCompanyCursor(os.environ["CURSOR_SIGNING_KEY"])
-        engine, factory = create_session_factory(database_url())
-        app.state.company_use_cases = CompanyUseCases(
-            lambda: SqlAlchemyCompanyUnitOfWork(factory), cursor
-        )
-        app.state.company_log_use_cases = CompanyLogUseCases(
-            lambda: SqlAlchemyCompanyUnitOfWork(factory),
-            SignedCompanyLogCursor(os.environ["CURSOR_SIGNING_KEY"]),
-        )
-        app.state.model_use_cases = ModelUseCases(
-            lambda: SqlAlchemyModelUnitOfWork(factory),
-            SignedModelCursor(os.environ["CURSOR_SIGNING_KEY"]),
-        )
-        app.state.model_log_use_cases = ModelLogUseCases(
-            lambda: SqlAlchemyModelUnitOfWork(factory),
-            SignedModelLogCursor(os.environ["CURSOR_SIGNING_KEY"]),
-        )
-        app.state.country_use_cases = CountryUseCases(
-            lambda: SqlAlchemyCountryUnitOfWork(factory),
-            SignedCountryCursor(os.environ["CURSOR_SIGNING_KEY"]),
-        )
-        app.state.country_log_use_cases = CountryLogUseCases(
-            lambda: SqlAlchemyCountryUnitOfWork(factory),
-            SignedCountryLogCursor(os.environ["CURSOR_SIGNING_KEY"]),
-        )
-        app.state.brand_use_cases = BrandUseCases(
-            lambda: SqlAlchemyBrandUnitOfWork(factory),
-            SignedBrandCursor(os.environ["CURSOR_SIGNING_KEY"]),
-        )
-        app.state.brand_log_use_cases = BrandLogUseCases(
-            lambda: SqlAlchemyBrandUnitOfWork(factory),
-            SignedBrandLogCursor(os.environ["CURSOR_SIGNING_KEY"]),
-        )
         try:
-            yield
+            async with runtime_factory() as resources:
+                for module in selected:
+                    module.configure(app, resources)
+                    missing = [
+                        name
+                        for name in module.state_names
+                        if getattr(app.state, name, None) is None
+                    ]
+                    if missing:
+                        raise ValueError(
+                            f"Feature {module.name} did not configure services: {missing}"
+                        )
+                yield
         finally:
-            await engine.dispose()
+            for name in state_names:
+                if hasattr(app.state, name):
+                    delattr(app.state, name)
 
     app = FastAPI(
         title="MDM API",
@@ -133,14 +67,17 @@ def create_app(
     app.add_middleware(RequestContextMiddleware)
     register_exception_handlers(app)
     app.include_router(health_router)
-    app.include_router(company_router)
-    app.include_router(company_log_router)
-    app.include_router(model_router)
-    app.include_router(country_router)
-    app.include_router(model_log_router)
-    app.include_router(country_log_router)
-    app.include_router(brand_router)
-    app.include_router(brand_log_router)
+    for module in selected:
+        for router in module.routers:
+            app.include_router(router)
+    operations: set[tuple[str, str]] = set()
+    for route in iter_route_contexts(app.routes):
+        if isinstance(route.original_route, APIRoute) and route.path_format is not None:
+            for method in route.methods or ():
+                key = (route.path_format, method)
+                if key in operations:
+                    raise ValueError(f"Duplicate route: {method} {route.path_format}")
+                operations.add(key)
     register_openapi_examples(app)
     add_scalar_reference(
         app,

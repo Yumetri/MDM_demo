@@ -14,7 +14,8 @@
 
 | 경로 | 책임 |
 | --- | --- |
-| `app.py` | FastAPI 생성, 구체 구현체 조립, 라우터 등록 |
+| `app.py` | FastAPI 생성, 공통 미들웨어·예외 처리·문서 설정, 선택한 기능 등록 |
+| `composition/` | 실행 자원 수명 관리, 차원별 구체 구현체 조립, 명시적 기능 목록 |
 | `domain/entities/` | Entity와 Aggregate Root |
 | `domain/value_objects/` | 불변 Value Object |
 | `domain/services/`, `domain/errors/` | 여러 도메인 객체의 업무 규칙, HTTP와 무관한 오류 |
@@ -33,7 +34,7 @@
 
 - 오류·cursor·의존성 제공자는 차원별 모듈에 둔다. 패키지 `__init__.py`에는 공통 정의만 두며 차원별 정의를 일괄 재노출하지 않는다.
 - Repository·Mapper 파일명은 `<aggregate>_repository.py`, `<aggregate>_mapper.py`를 사용한다. 업무 로직을 담는 최상위 `utils/`, `common/`, `helpers.py`는 만들지 않는다.
-- 클린 아키텍처의 프로젝트 내부 의존성은 `domain → domain`, `application → domain/application`, `infrastructure → domain/application/infrastructure`, `presentation → application/presentation`만 허용한다. `app.py`는 전체 계층을 조립하되 업무 규칙을 구현하지 않는다.
+- 클린 아키텍처의 프로젝트 내부 의존성은 `domain → domain`, `application → domain/application`, `infrastructure → domain/application/infrastructure`, `presentation → application/presentation`만 허용한다. `app.py`와 `composition/`만 전체 계층을 조립하며 업무 규칙을 구현하지 않는다. 나머지 계층은 `composition/`을 import하지 않는다.
 - `domain`·`application`에서 FastAPI·SQLAlchemy·Redis 클라이언트를 import하지 않는다. `presentation`에서 SQL·Redis를 직접 호출하거나 인프라 구현체를 생성하지 않는다.
 
 ## 도메인·트랜잭션·캐시
@@ -79,6 +80,8 @@
 | Markdown만 변경 | `git diff --check`, 링크 대상·규칙 간 모순 확인 |
 
 - 검증은 `uv run --locked`를 사용한다. 실패를 숨기거나 기준을 완화하지 않으며 실행하지 못한 검사와 이유를 보고한다. 포맷 수정은 `make format`을 사용하되 무관한 파일을 수정하지 않는다.
+- 기능 조립은 `composition/registry.py`의 명시적인 목록을 사용한다. 차원별 조립은 해당 모듈에서 수행하고 파일 탐색·import 부작용으로 기능을 자동 등록하지 않는다. 실제 앱이 생성한 실행 자원은 lifespan에서 종료하며 테스트 fixture가 제공한 자원은 해당 fixture만 종료한다.
+- 차원별 테스트 fixture는 `tests/fixtures/`에 두고 공통 앱 팩토리를 사용한다. 기존 API 테스트에 다른 차원의 서비스 인자를 추가하지 않는다. 격리 API 검사와 전체 앱 통합 검사를 함께 유지한다.
 - 테스트는 `tests/unit/domain/`, `tests/unit/application/`, `tests/integration/persistence/`, `tests/integration/cache/`, `tests/api/`에 배치한다. 도메인 테스트는 DB 없이, 영속성·캐시 통합 테스트는 실제 PostgreSQL·Redis에서 실행한다.
 - 관련 불변식·Mapper 왕복·UoW 성공/실패·API 오류·cursor 경계를 동작 테스트로 검증한다. 정적 검사는 이를 대체하지 않는다. 테스트 환경 구축 시 실행 명령을 Makefile에 추가한다.
 

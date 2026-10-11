@@ -6,7 +6,6 @@ from fastapi import HTTPException
 from httpx import ASGITransport, AsyncClient
 from sqlalchemy import func, select
 
-from mdm_demo.app import create_app
 from mdm_demo.infrastructure.persistence.models.model import ModelModel
 from mdm_demo.infrastructure.persistence.models.model_log import ModelLogModel
 
@@ -151,26 +150,8 @@ async def test_missing_invalid_id_and_framework_errors(client):
         assert_request_id(response)
 
 
-async def test_unexpected_error_sanitized_and_http_headers_preserved(
-    service,
-    log_service,
-    model_service,
-    model_log_service,
-    country_service,
-    country_log_service,
-    brand_service,
-    brand_log_service,
-):
-    app = create_app(
-        service=service,
-        log_service=log_service,
-        model_service=model_service,
-        model_log_service=model_log_service,
-        brand_service=brand_service,
-        brand_log_service=brand_log_service,
-        country_service=country_service,
-        country_log_service=country_log_service,
-    )
+async def test_unexpected_error_sanitized_and_http_headers_preserved(app_factory):
+    app = app_factory()
 
     @app.get("/test-error")
     async def failure():
