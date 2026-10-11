@@ -6,7 +6,7 @@ from mdm_demo.application.dto.brand import BrandDTO, BrandPage
 from mdm_demo.application.errors import ApplicationError
 from mdm_demo.application.errors.brand import DuplicateBrandCode
 from mdm_demo.application.ports.cursors.brand import BrandBoundary, BrandCursor
-from mdm_demo.application.ports.unit_of_work import UnitOfWork
+from mdm_demo.application.ports.units_of_work.brand import BrandUnitOfWork
 from mdm_demo.domain.entities.brand import Brand
 from mdm_demo.domain.entities.brand_log import BrandLog
 from mdm_demo.domain.errors import AutoCodeUnavailable
@@ -26,7 +26,7 @@ def translate_domain_errors() -> Generator[None]:
 
 
 class BrandUseCases:
-    def __init__(self, uow_factory: Callable[[], UnitOfWork], cursor: BrandCursor) -> None:
+    def __init__(self, uow_factory: Callable[[], BrandUnitOfWork], cursor: BrandCursor) -> None:
         self._uow_factory = uow_factory
         self._cursor = cursor
 

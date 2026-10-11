@@ -74,7 +74,7 @@ Country·CountryLog 조회에는 캐시를 적용하지 않는다. PostgreSQL에
 | 계층 | 구현 |
 | --- | --- |
 | 도메인 | [Country](../../../src/mdm_demo/domain/entities/country.py), [이름](../../../src/mdm_demo/domain/value_objects/country_name.py), [코드](../../../src/mdm_demo/domain/value_objects/country_code.py) |
-| 유스케이스 | [CountryService](../../../src/mdm_demo/application/use_cases/country.py), [UoW](../../../src/mdm_demo/infrastructure/persistence/unit_of_work.py) |
+| 유스케이스 | [CountryService](../../../src/mdm_demo/application/use_cases/country.py), [UoW](../../../src/mdm_demo/infrastructure/persistence/units_of_work/country.py) |
 | 영속성 | [ORM](../../../src/mdm_demo/infrastructure/persistence/models/country.py), [Mapper](../../../src/mdm_demo/infrastructure/persistence/mappers/country_mapper.py), [Repository](../../../src/mdm_demo/infrastructure/persistence/repositories/country_repository.py) |
 | HTTP | [라우터](../../../src/mdm_demo/presentation/routers/country.py), [요청·응답](../../../src/mdm_demo/presentation/schemas/country.py), [실행 예제](../../../src/mdm_demo/presentation/schemas/country_examples.py) |
 
@@ -93,3 +93,5 @@ Country·CountryLog 조회에는 캐시를 적용하지 않는다. PostgreSQL에
 - [Company](company.md)·[Model](model.md): 독립된 다른 차원. 개별 차원의 입력·변경 규칙을 Country에 자동 적용하지 않는다.
 - [CountryLog](country-log.md): Country 변경과 함께 저장하고 원본 삭제 후에도 보존하는 이력.
 - [Dimension 목차](README.md)
+
+트랜잭션 조립은 [Country UoW](../../../src/mdm_demo/infrastructure/persistence/units_of_work/country.py)를 사용한다. 차원과 로그 저장소는 같은 세션을 공유하고, 세션 정리·commit·rollback은 [공통 구현](../../../src/mdm_demo/infrastructure/persistence/unit_of_work.py)에서 처리한다.

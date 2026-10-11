@@ -16,7 +16,7 @@ from mdm_demo.domain.value_objects.country_name import CountryName
 from mdm_demo.infrastructure.persistence.mappers import country_log_mapper, country_mapper
 from mdm_demo.infrastructure.persistence.models.country import CountryModel
 from mdm_demo.infrastructure.persistence.models.country_log import CountryLogModel
-from mdm_demo.infrastructure.persistence.unit_of_work import SqlAlchemyUnitOfWork
+from mdm_demo.infrastructure.persistence.units_of_work.country import SqlAlchemyCountryUnitOfWork
 
 
 async def counts(factory):
@@ -42,7 +42,7 @@ async def test_mapper_roundtrip_and_commit(database):
     _, factory = database
     country = Country.create(" 삼성  전자 ", "abc")
     log = CountryLog.record(country.id, "create", uuid4(), None, country.snapshot())
-    async with SqlAlchemyUnitOfWork(factory) as uow:
+    async with SqlAlchemyCountryUnitOfWork(factory) as uow:
         await uow.countries.add(country)
         await uow.country_logs.add(log)
         await uow.commit()
@@ -65,7 +65,7 @@ async def test_mapper_roundtrip_and_commit(database):
 async def test_uncommitted_exit_rolls_back_both(database, raise_error):
     _, factory = database
     try:
-        async with SqlAlchemyUnitOfWork(factory) as uow:
+        async with SqlAlchemyCountryUnitOfWork(factory) as uow:
             country = Country.create("KOREA", "KOR")
             await uow.countries.add(country)
             await uow.country_logs.add(
@@ -121,7 +121,7 @@ async def test_commit_failure_cleans_up(database, country_cursor_codec):
 
     failing_factory = async_sessionmaker(engine, class_=FailingSession, expire_on_commit=False)
     country_service = CountryUseCases(
-        lambda: SqlAlchemyUnitOfWork(failing_factory), country_cursor_codec
+        lambda: SqlAlchemyCountryUnitOfWork(failing_factory), country_cursor_codec
     )
     with pytest.raises(RuntimeError, match="injected before commit"):
         await country_service.create("KOREA", "KOR", uuid4())
@@ -140,7 +140,7 @@ async def test_cancellation_during_commit_cleans_up(database, country_cursor_cod
 
     waiting_factory = async_sessionmaker(engine, class_=WaitingSession, expire_on_commit=False)
     country_service = CountryUseCases(
-        lambda: SqlAlchemyUnitOfWork(waiting_factory), country_cursor_codec
+        lambda: SqlAlchemyCountryUnitOfWork(waiting_factory), country_cursor_codec
     )
     task = asyncio.create_task(country_service.create("KOREA", "KOR", uuid4()))
     await asyncio.wait_for(entered.wait(), 5)
@@ -165,7 +165,7 @@ async def test_repeated_cancellation_waits_for_cleanup(database):
     slow_factory = async_sessionmaker(engine, class_=SlowRollbackSession, expire_on_commit=False)
 
     async def change():
-        async with SqlAlchemyUnitOfWork(slow_factory) as uow:
+        async with SqlAlchemyCountryUnitOfWork(slow_factory) as uow:
             await uow.countries.add(Country.create("KOREA", "KOR"))
 
     task = asyncio.create_task(change())
@@ -223,7 +223,7 @@ async def wait_for_lock_waiter(factory):
 async def test_update_delete_race_logs_locked_current_value(database, country_service):
     _, factory = database
     country = await country_service.create("KOREA", "KOR", uuid4())
-    async with SqlAlchemyUnitOfWork(factory) as uow:
+    async with SqlAlchemyCountryUnitOfWork(factory) as uow:
         entity = await uow.countries.get(country.id, for_update=True)
         assert entity is not None
         before = entity.snapshot()
@@ -251,7 +251,7 @@ async def test_update_delete_race_logs_locked_current_value(database, country_se
 async def test_delete_then_update_waiter_returns_not_found(database, country_service):
     _, factory = database
     country = await country_service.create("KOREA", "KOR", uuid4())
-    async with SqlAlchemyUnitOfWork(factory) as uow:
+    async with SqlAlchemyCountryUnitOfWork(factory) as uow:
         entity = await uow.countries.get(country.id, for_update=True)
         assert entity is not None
         await uow.countries.delete(entity)
@@ -283,7 +283,7 @@ async def test_append_only_log_and_unrelated_constraint_not_duplicate(database, 
             await session.execute(text("UPDATE country_logs SET operation = operation"))
         await session.rollback()
     # A duplicate primary key must not be misreported as duplicate country code.
-    async with SqlAlchemyUnitOfWork(factory) as uow:
+    async with SqlAlchemyCountryUnitOfWork(factory) as uow:
         existing = await uow.countries.get(country.id)
         assert existing is not None
         with pytest.raises(IntegrityError):
@@ -297,7 +297,7 @@ async def test_cursor_same_timestamp_and_deleted_boundary(database, country_serv
         Country(UUID(int=i), CountryName(code), CountryCode(code), now, now)
         for i, code in enumerate(["AAA", "AAB", "AAC"], 1)
     ]
-    async with SqlAlchemyUnitOfWork(factory) as uow:
+    async with SqlAlchemyCountryUnitOfWork(factory) as uow:
         for entity in entities:
             await uow.countries.add(entity)
         await uow.commit()

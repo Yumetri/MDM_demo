@@ -4,11 +4,13 @@ from uuid import UUID
 from mdm_demo.application.dto.brand_log import BrandLogDTO, BrandLogPage
 from mdm_demo.application.errors import ApplicationError
 from mdm_demo.application.ports.cursors.brand import BrandLogBoundary, BrandLogCursor
-from mdm_demo.application.ports.unit_of_work import UnitOfWork
+from mdm_demo.application.ports.units_of_work.brand import BrandLogUnitOfWork
 
 
 class BrandLogUseCases:
-    def __init__(self, uow_factory: Callable[[], UnitOfWork], cursor: BrandLogCursor) -> None:
+    def __init__(
+        self, uow_factory: Callable[[], BrandLogUnitOfWork], cursor: BrandLogCursor
+    ) -> None:
         self._uow_factory = uow_factory
         self._cursor = cursor
 

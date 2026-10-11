@@ -6,7 +6,7 @@ from mdm_demo.application.dto.model import ModelDTO, ModelPage
 from mdm_demo.application.errors import ApplicationError
 from mdm_demo.application.errors.model import DuplicateModelCode
 from mdm_demo.application.ports.cursors.model import ModelBoundary, ModelCursor
-from mdm_demo.application.ports.unit_of_work import UnitOfWork
+from mdm_demo.application.ports.units_of_work.model import ModelUnitOfWork
 from mdm_demo.domain.entities.model import Model
 from mdm_demo.domain.entities.model_log import ModelLog
 from mdm_demo.domain.errors import AutoCodeUnavailable
@@ -26,7 +26,7 @@ def translate_domain_errors() -> Generator[None]:
 
 
 class ModelUseCases:
-    def __init__(self, uow_factory: Callable[[], UnitOfWork], cursor: ModelCursor) -> None:
+    def __init__(self, uow_factory: Callable[[], ModelUnitOfWork], cursor: ModelCursor) -> None:
         self._uow_factory = uow_factory
         self._cursor = cursor
 

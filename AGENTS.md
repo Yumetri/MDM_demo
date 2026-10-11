@@ -21,11 +21,11 @@
 | `application/use_cases/`, `application/dto/` | 유스케이스 실행·UoW 경계, 입력·출력 DTO |
 | `application/errors/`, `application/ports/cursors/` | 공통 오류와 차원별 오류, 차원별 cursor 타입·인터페이스 |
 | `application/ports/repositories/` | Aggregate별 Repository 인터페이스 |
-| `application/ports/unit_of_work.py`, `application/ports/cache.py` | 비동기 UoW·캐시 인터페이스 |
+| `application/ports/unit_of_work.py`, `application/ports/units_of_work/`, `application/ports/cache.py` | 공통 트랜잭션·차원별 UoW·캐시 인터페이스 |
 | `infrastructure/persistence/models/` | SQLAlchemy 영속성 모델 |
 | `infrastructure/persistence/mappers/` | 도메인 ↔ ORM 변환 |
 | `infrastructure/persistence/repositories/` | Repository 구현 |
-| `infrastructure/persistence/session.py`, `infrastructure/persistence/unit_of_work.py` | 엔진·세션 팩토리, SQLAlchemy UoW 구현 |
+| `infrastructure/persistence/session.py`, `infrastructure/persistence/unit_of_work.py`, `infrastructure/persistence/units_of_work/` | 엔진·세션 팩토리, 공통 트랜잭션 처리·차원별 SQLAlchemy UoW |
 | `infrastructure/cache/redis_cache.py` | Redis 캐시 구현 |
 | `presentation/routers/`, `presentation/schemas/` | FastAPI 엔드포인트, HTTP 요청·응답 모델 |
 | `presentation/dependencies/` | 조립된 의존성을 전달하는 FastAPI 어댑터 |
@@ -43,6 +43,7 @@
 - 도메인 객체·ORM 모델·API DTO를 별도 클래스로 분리한다. 도메인 ↔ ORM 변환은 `infrastructure/persistence/mappers/`에서 손실 없이 수행하며 도메인에 세션·지연 로딩을 노출하지 않는다.
 - 조회 전용 DTO 투영은 허용한다. 순수 도메인 계산은 동기, DB·네트워크 I/O는 비동기로 구현한다.
 - 유스케이스가 `async with uow`로 작업을 시작하고 저장 성공 시 `await uow.commit()`을 호출한다. 실제 commit·rollback·세션 종료는 UoW 구현만 수행한다. Repository의 flush는 허용한다.
+- 유스케이스는 필요한 저장소만 선언한 차원별 UoW Protocol에 의존한다. 차원 데이터와 로그 저장소는 같은 세션을 사용하며 commit·rollback·취소·종료 구현은 공통 UoW에서 재사용한다. 여러 차원의 원자적 변경이 필요한 경우 해당 작업의 저장소를 한 세션에 묶는 UoW를 정의한다.
 - 미커밋 종료·예외에는 rollback한다. 취소·commit 실패에도 세션을 정리하고 정상 종료만으로 자동 commit하지 않는다. 같은 UoW의 Repository는 세션을 공유하되 동시 태스크 간에는 공유하지 않는다.
 - 캐시 키·TTL·무효화·장애 대응을 유스케이스별로 문서화한다. DB 변경에 따른 캐시 갱신·무효화는 commit 이후 수행하고 실패 처리 전략을 정의한다. DB와 Redis의 원자성을 가정하지 않는다.
 

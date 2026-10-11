@@ -16,7 +16,7 @@ from mdm_demo.domain.value_objects.brand_name import BrandName
 from mdm_demo.infrastructure.persistence.mappers import brand_log_mapper, brand_mapper
 from mdm_demo.infrastructure.persistence.models.brand import BrandModel
 from mdm_demo.infrastructure.persistence.models.brand_log import BrandLogModel
-from mdm_demo.infrastructure.persistence.unit_of_work import SqlAlchemyUnitOfWork
+from mdm_demo.infrastructure.persistence.units_of_work.brand import SqlAlchemyBrandUnitOfWork
 
 
 async def counts(factory):
@@ -42,7 +42,7 @@ async def test_mapper_roundtrip_and_commit(database):
     _, factory = database
     brand = Brand.create(" 삼성  전자 ", "abc")
     log = BrandLog.record(brand.id, "create", uuid4(), None, brand.snapshot())
-    async with SqlAlchemyUnitOfWork(factory) as uow:
+    async with SqlAlchemyBrandUnitOfWork(factory) as uow:
         await uow.brands.add(brand)
         await uow.brand_logs.add(log)
         await uow.commit()
@@ -65,7 +65,7 @@ async def test_mapper_roundtrip_and_commit(database):
 async def test_uncommitted_exit_rolls_back_both(database, raise_error):
     _, factory = database
     try:
-        async with SqlAlchemyUnitOfWork(factory) as uow:
+        async with SqlAlchemyBrandUnitOfWork(factory) as uow:
             brand = Brand.create("Samsung")
             await uow.brands.add(brand)
             await uow.brand_logs.add(
@@ -120,7 +120,9 @@ async def test_commit_failure_cleans_up(database, brand_cursor_codec):
             raise RuntimeError("injected before commit")
 
     failing_factory = async_sessionmaker(engine, class_=FailingSession, expire_on_commit=False)
-    brand_service = BrandUseCases(lambda: SqlAlchemyUnitOfWork(failing_factory), brand_cursor_codec)
+    brand_service = BrandUseCases(
+        lambda: SqlAlchemyBrandUnitOfWork(failing_factory), brand_cursor_codec
+    )
     with pytest.raises(RuntimeError, match="injected before commit"):
         await brand_service.create("Samsung", None, uuid4())
     assert await counts(factory) == (0, 0)
@@ -137,7 +139,9 @@ async def test_cancellation_during_commit_cleans_up(database, brand_cursor_codec
             await asyncio.Event().wait()
 
     waiting_factory = async_sessionmaker(engine, class_=WaitingSession, expire_on_commit=False)
-    brand_service = BrandUseCases(lambda: SqlAlchemyUnitOfWork(waiting_factory), brand_cursor_codec)
+    brand_service = BrandUseCases(
+        lambda: SqlAlchemyBrandUnitOfWork(waiting_factory), brand_cursor_codec
+    )
     task = asyncio.create_task(brand_service.create("Samsung", None, uuid4()))
     await asyncio.wait_for(entered.wait(), 5)
     task.cancel()
@@ -161,7 +165,7 @@ async def test_repeated_cancellation_waits_for_cleanup(database):
     slow_factory = async_sessionmaker(engine, class_=SlowRollbackSession, expire_on_commit=False)
 
     async def change():
-        async with SqlAlchemyUnitOfWork(slow_factory) as uow:
+        async with SqlAlchemyBrandUnitOfWork(slow_factory) as uow:
             await uow.brands.add(Brand.create("Samsung"))
 
     task = asyncio.create_task(change())
@@ -219,7 +223,7 @@ async def wait_for_lock_waiter(factory):
 async def test_update_delete_race_logs_locked_current_value(database, brand_service):
     _, factory = database
     brand = await brand_service.create("Samsung", None, uuid4())
-    async with SqlAlchemyUnitOfWork(factory) as uow:
+    async with SqlAlchemyBrandUnitOfWork(factory) as uow:
         entity = await uow.brands.get(brand.id, for_update=True)
         assert entity is not None
         before = entity.snapshot()
@@ -247,7 +251,7 @@ async def test_update_delete_race_logs_locked_current_value(database, brand_serv
 async def test_delete_then_update_waiter_returns_not_found(database, brand_service):
     _, factory = database
     brand = await brand_service.create("Samsung", None, uuid4())
-    async with SqlAlchemyUnitOfWork(factory) as uow:
+    async with SqlAlchemyBrandUnitOfWork(factory) as uow:
         entity = await uow.brands.get(brand.id, for_update=True)
         assert entity is not None
         await uow.brands.delete(entity)
@@ -279,7 +283,7 @@ async def test_append_only_log_and_unrelated_constraint_not_duplicate(database, 
             await session.execute(text("UPDATE brand_logs SET operation = operation"))
         await session.rollback()
     # A duplicate primary key must not be misreported as duplicate brand code.
-    async with SqlAlchemyUnitOfWork(factory) as uow:
+    async with SqlAlchemyBrandUnitOfWork(factory) as uow:
         existing = await uow.brands.get(brand.id)
         assert existing is not None
         with pytest.raises(IntegrityError):
@@ -293,7 +297,7 @@ async def test_cursor_same_timestamp_and_deleted_boundary(database, brand_servic
         Brand(UUID(int=i), BrandName("Same"), BrandCode(code), now, now)
         for i, code in enumerate(["AAA", "AAB", "AAC"], 1)
     ]
-    async with SqlAlchemyUnitOfWork(factory) as uow:
+    async with SqlAlchemyBrandUnitOfWork(factory) as uow:
         for entity in entities:
             await uow.brands.add(entity)
         await uow.commit()

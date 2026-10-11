@@ -16,7 +16,7 @@ from mdm_demo.domain.value_objects.model_name import ModelName
 from mdm_demo.infrastructure.persistence.mappers import model_log_mapper, model_mapper
 from mdm_demo.infrastructure.persistence.models.model import ModelModel
 from mdm_demo.infrastructure.persistence.models.model_log import ModelLogModel
-from mdm_demo.infrastructure.persistence.unit_of_work import SqlAlchemyUnitOfWork
+from mdm_demo.infrastructure.persistence.units_of_work.model import SqlAlchemyModelUnitOfWork
 
 
 async def counts(factory):
@@ -42,7 +42,7 @@ async def test_mapper_roundtrip_and_commit(database):
     _, factory = database
     model = Model.create(" 삼성  전자 ", "abc")
     log = ModelLog.record(model.id, "create", uuid4(), None, model.snapshot())
-    async with SqlAlchemyUnitOfWork(factory) as uow:
+    async with SqlAlchemyModelUnitOfWork(factory) as uow:
         await uow.models.add(model)
         await uow.model_logs.add(log)
         await uow.commit()
@@ -65,7 +65,7 @@ async def test_mapper_roundtrip_and_commit(database):
 async def test_uncommitted_exit_rolls_back_both(database, raise_error):
     _, factory = database
     try:
-        async with SqlAlchemyUnitOfWork(factory) as uow:
+        async with SqlAlchemyModelUnitOfWork(factory) as uow:
             model = Model.create("Samsung")
             await uow.models.add(model)
             await uow.model_logs.add(
@@ -120,7 +120,9 @@ async def test_commit_failure_cleans_up(database, model_cursor_codec):
             raise RuntimeError("injected before commit")
 
     failing_factory = async_sessionmaker(engine, class_=FailingSession, expire_on_commit=False)
-    model_service = ModelUseCases(lambda: SqlAlchemyUnitOfWork(failing_factory), model_cursor_codec)
+    model_service = ModelUseCases(
+        lambda: SqlAlchemyModelUnitOfWork(failing_factory), model_cursor_codec
+    )
     with pytest.raises(RuntimeError, match="injected before commit"):
         await model_service.create("Samsung", None, uuid4())
     assert await counts(factory) == (0, 0)
@@ -137,7 +139,9 @@ async def test_cancellation_during_commit_cleans_up(database, model_cursor_codec
             await asyncio.Event().wait()
 
     waiting_factory = async_sessionmaker(engine, class_=WaitingSession, expire_on_commit=False)
-    model_service = ModelUseCases(lambda: SqlAlchemyUnitOfWork(waiting_factory), model_cursor_codec)
+    model_service = ModelUseCases(
+        lambda: SqlAlchemyModelUnitOfWork(waiting_factory), model_cursor_codec
+    )
     task = asyncio.create_task(model_service.create("Samsung", None, uuid4()))
     await asyncio.wait_for(entered.wait(), 5)
     task.cancel()
@@ -161,7 +165,7 @@ async def test_repeated_cancellation_waits_for_cleanup(database):
     slow_factory = async_sessionmaker(engine, class_=SlowRollbackSession, expire_on_commit=False)
 
     async def change():
-        async with SqlAlchemyUnitOfWork(slow_factory) as uow:
+        async with SqlAlchemyModelUnitOfWork(slow_factory) as uow:
             await uow.models.add(Model.create("Samsung"))
 
     task = asyncio.create_task(change())
@@ -219,7 +223,7 @@ async def wait_for_lock_waiter(factory):
 async def test_update_delete_race_logs_locked_current_value(database, model_service):
     _, factory = database
     model = await model_service.create("Samsung", None, uuid4())
-    async with SqlAlchemyUnitOfWork(factory) as uow:
+    async with SqlAlchemyModelUnitOfWork(factory) as uow:
         entity = await uow.models.get(model.id, for_update=True)
         assert entity is not None
         before = entity.snapshot()
@@ -247,7 +251,7 @@ async def test_update_delete_race_logs_locked_current_value(database, model_serv
 async def test_delete_then_update_waiter_returns_not_found(database, model_service):
     _, factory = database
     model = await model_service.create("Samsung", None, uuid4())
-    async with SqlAlchemyUnitOfWork(factory) as uow:
+    async with SqlAlchemyModelUnitOfWork(factory) as uow:
         entity = await uow.models.get(model.id, for_update=True)
         assert entity is not None
         await uow.models.delete(entity)
@@ -279,7 +283,7 @@ async def test_append_only_log_and_unrelated_constraint_not_duplicate(database, 
             await session.execute(text("UPDATE model_logs SET operation = operation"))
         await session.rollback()
     # A duplicate primary key must not be misreported as duplicate model code.
-    async with SqlAlchemyUnitOfWork(factory) as uow:
+    async with SqlAlchemyModelUnitOfWork(factory) as uow:
         existing = await uow.models.get(model.id)
         assert existing is not None
         with pytest.raises(IntegrityError):
@@ -293,7 +297,7 @@ async def test_cursor_same_timestamp_and_deleted_boundary(database, model_servic
         Model(UUID(int=i), ModelName("Same"), ModelCode(code), now, now)
         for i, code in enumerate(["AAA", "AAB", "AAC"], 1)
     ]
-    async with SqlAlchemyUnitOfWork(factory) as uow:
+    async with SqlAlchemyModelUnitOfWork(factory) as uow:
         for entity in entities:
             await uow.models.add(entity)
         await uow.commit()

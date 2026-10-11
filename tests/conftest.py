@@ -24,7 +24,10 @@ from mdm_demo.infrastructure.pagination.country_log_cursor import SignedCountryL
 from mdm_demo.infrastructure.pagination.model_cursor import SignedModelCursor
 from mdm_demo.infrastructure.pagination.model_log_cursor import SignedModelLogCursor
 from mdm_demo.infrastructure.persistence.session import create_session_factory, database_url
-from mdm_demo.infrastructure.persistence.unit_of_work import SqlAlchemyUnitOfWork
+from mdm_demo.infrastructure.persistence.units_of_work.brand import SqlAlchemyBrandUnitOfWork
+from mdm_demo.infrastructure.persistence.units_of_work.company import SqlAlchemyCompanyUnitOfWork
+from mdm_demo.infrastructure.persistence.units_of_work.country import SqlAlchemyCountryUnitOfWork
+from mdm_demo.infrastructure.persistence.units_of_work.model import SqlAlchemyModelUnitOfWork
 
 
 @pytest.fixture
@@ -53,14 +56,14 @@ def cursor_codec() -> SignedCompanyCursor:
 @pytest.fixture
 async def service(database, cursor_codec) -> CompanyUseCases:
     _, factory = database
-    return CompanyUseCases(lambda: SqlAlchemyUnitOfWork(factory), cursor_codec)
+    return CompanyUseCases(lambda: SqlAlchemyCompanyUnitOfWork(factory), cursor_codec)
 
 
 @pytest.fixture
 async def log_service(database) -> CompanyLogUseCases:
     _, factory = database
     return CompanyLogUseCases(
-        lambda: SqlAlchemyUnitOfWork(factory),
+        lambda: SqlAlchemyCompanyUnitOfWork(factory),
         SignedCompanyLogCursor("test-only-signing-key-with-at-least-32-bytes"),
     )
 
@@ -73,14 +76,14 @@ def model_cursor_codec() -> SignedModelCursor:
 @pytest.fixture
 async def model_service(database, model_cursor_codec) -> ModelUseCases:
     _, factory = database
-    return ModelUseCases(lambda: SqlAlchemyUnitOfWork(factory), model_cursor_codec)
+    return ModelUseCases(lambda: SqlAlchemyModelUnitOfWork(factory), model_cursor_codec)
 
 
 @pytest.fixture
 async def model_log_service(database) -> ModelLogUseCases:
     _, factory = database
     return ModelLogUseCases(
-        lambda: SqlAlchemyUnitOfWork(factory),
+        lambda: SqlAlchemyModelUnitOfWork(factory),
         SignedModelLogCursor("test-only-signing-key-with-at-least-32-bytes"),
     )
 
@@ -93,14 +96,14 @@ def country_cursor_codec() -> SignedCountryCursor:
 @pytest.fixture
 async def country_service(database, country_cursor_codec) -> CountryUseCases:
     _, factory = database
-    return CountryUseCases(lambda: SqlAlchemyUnitOfWork(factory), country_cursor_codec)
+    return CountryUseCases(lambda: SqlAlchemyCountryUnitOfWork(factory), country_cursor_codec)
 
 
 @pytest.fixture
 async def country_log_service(database) -> CountryLogUseCases:
     _, factory = database
     return CountryLogUseCases(
-        lambda: SqlAlchemyUnitOfWork(factory),
+        lambda: SqlAlchemyCountryUnitOfWork(factory),
         SignedCountryLogCursor("test-only-signing-key-with-at-least-32-bytes"),
     )
 
@@ -113,14 +116,14 @@ def brand_cursor_codec() -> SignedBrandCursor:
 @pytest.fixture
 async def brand_service(database, brand_cursor_codec) -> BrandUseCases:
     _, factory = database
-    return BrandUseCases(lambda: SqlAlchemyUnitOfWork(factory), brand_cursor_codec)
+    return BrandUseCases(lambda: SqlAlchemyBrandUnitOfWork(factory), brand_cursor_codec)
 
 
 @pytest.fixture
 async def brand_log_service(database) -> BrandLogUseCases:
     _, factory = database
     return BrandLogUseCases(
-        lambda: SqlAlchemyUnitOfWork(factory),
+        lambda: SqlAlchemyBrandUnitOfWork(factory),
         SignedBrandLogCursor("test-only-signing-key-with-at-least-32-bytes"),
     )
 

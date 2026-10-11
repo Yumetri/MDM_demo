@@ -4,11 +4,13 @@ from uuid import UUID
 from mdm_demo.application.dto.model_log import ModelLogDTO, ModelLogPage
 from mdm_demo.application.errors import ApplicationError
 from mdm_demo.application.ports.cursors.model import ModelLogBoundary, ModelLogCursor
-from mdm_demo.application.ports.unit_of_work import UnitOfWork
+from mdm_demo.application.ports.units_of_work.model import ModelLogUnitOfWork
 
 
 class ModelLogUseCases:
-    def __init__(self, uow_factory: Callable[[], UnitOfWork], cursor: ModelLogCursor) -> None:
+    def __init__(
+        self, uow_factory: Callable[[], ModelLogUnitOfWork], cursor: ModelLogCursor
+    ) -> None:
         self._uow_factory = uow_factory
         self._cursor = cursor
 

@@ -4,11 +4,13 @@ from uuid import UUID
 from mdm_demo.application.dto.country_log import CountryLogDTO, CountryLogPage
 from mdm_demo.application.errors import ApplicationError
 from mdm_demo.application.ports.cursors.country import CountryLogBoundary, CountryLogCursor
-from mdm_demo.application.ports.unit_of_work import UnitOfWork
+from mdm_demo.application.ports.units_of_work.country import CountryLogUnitOfWork
 
 
 class CountryLogUseCases:
-    def __init__(self, uow_factory: Callable[[], UnitOfWork], cursor: CountryLogCursor) -> None:
+    def __init__(
+        self, uow_factory: Callable[[], CountryLogUnitOfWork], cursor: CountryLogCursor
+    ) -> None:
         self._uow_factory = uow_factory
         self._cursor = cursor
 

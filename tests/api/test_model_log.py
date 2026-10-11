@@ -3,7 +3,7 @@ from uuid import UUID, uuid4
 
 from mdm_demo.domain.entities.model import Model
 from mdm_demo.domain.entities.model_log import ModelLog
-from mdm_demo.infrastructure.persistence.unit_of_work import SqlAlchemyUnitOfWork
+from mdm_demo.infrastructure.persistence.units_of_work.model import SqlAlchemyModelUnitOfWork
 
 
 async def test_history_survives_delete_and_code_reuse(client):
@@ -94,7 +94,7 @@ async def test_same_timestamp_log_pagination(client, database):
     model = Model.create("Same", "SMA")
     other = Model.create("Other", "OTH")
     now = datetime.now(UTC)
-    async with SqlAlchemyUnitOfWork(factory) as uow:
+    async with SqlAlchemyModelUnitOfWork(factory) as uow:
         for index, target in [(3, model), (2, other), (1, model)]:
             await uow.model_logs.add(
                 ModelLog(
