@@ -7,6 +7,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from mdm_demo.application.ports.repositories.company_log_repository import CompanyLogRepository
 from mdm_demo.application.ports.repositories.company_repository import CompanyRepository
+from mdm_demo.application.ports.repositories.country_log_repository import CountryLogRepository
+from mdm_demo.application.ports.repositories.country_repository import CountryRepository
 from mdm_demo.application.ports.repositories.model_log_repository import ModelLogRepository
 from mdm_demo.application.ports.repositories.model_repository import ModelRepository
 from mdm_demo.infrastructure.persistence.repositories.company_log_repository import (
@@ -14,6 +16,12 @@ from mdm_demo.infrastructure.persistence.repositories.company_log_repository imp
 )
 from mdm_demo.infrastructure.persistence.repositories.company_repository import (
     SqlAlchemyCompanyRepository,
+)
+from mdm_demo.infrastructure.persistence.repositories.country_log_repository import (
+    SqlAlchemyCountryLogRepository,
+)
+from mdm_demo.infrastructure.persistence.repositories.country_repository import (
+    SqlAlchemyCountryRepository,
 )
 from mdm_demo.infrastructure.persistence.repositories.model_log_repository import (
     SqlAlchemyModelLogRepository,
@@ -27,7 +35,9 @@ class SqlAlchemyUnitOfWork:
     companies: CompanyRepository
     company_logs: CompanyLogRepository
     models: ModelRepository
+    countries: CountryRepository
     model_logs: ModelLogRepository
+    country_logs: CountryLogRepository
 
     def __init__(self, factory: Callable[[], AsyncSession]) -> None:
         self._factory = factory
@@ -40,7 +50,9 @@ class SqlAlchemyUnitOfWork:
         self.companies = SqlAlchemyCompanyRepository(self._session)
         self.company_logs = SqlAlchemyCompanyLogRepository(self._session)
         self.models = SqlAlchemyModelRepository(self._session)
+        self.countries = SqlAlchemyCountryRepository(self._session)
         self.model_logs = SqlAlchemyModelLogRepository(self._session)
+        self.country_logs = SqlAlchemyCountryLogRepository(self._session)
         return self
 
     async def commit(self) -> None:

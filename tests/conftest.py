@@ -9,10 +9,14 @@ from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, async_sessionmaker
 from mdm_demo.app import create_app
 from mdm_demo.application.use_cases.company import CompanyUseCases
 from mdm_demo.application.use_cases.company_log import CompanyLogUseCases
+from mdm_demo.application.use_cases.country import CountryUseCases
+from mdm_demo.application.use_cases.country_log import CountryLogUseCases
 from mdm_demo.application.use_cases.model import ModelUseCases
 from mdm_demo.application.use_cases.model_log import ModelLogUseCases
 from mdm_demo.infrastructure.pagination.company_cursor import SignedCompanyCursor
 from mdm_demo.infrastructure.pagination.company_log_cursor import SignedCompanyLogCursor
+from mdm_demo.infrastructure.pagination.country_cursor import SignedCountryCursor
+from mdm_demo.infrastructure.pagination.country_log_cursor import SignedCountryLogCursor
 from mdm_demo.infrastructure.pagination.model_cursor import SignedModelCursor
 from mdm_demo.infrastructure.pagination.model_log_cursor import SignedModelLogCursor
 from mdm_demo.infrastructure.persistence.session import create_session_factory, database_url
@@ -26,7 +30,11 @@ async def database() -> AsyncIterator[tuple[AsyncEngine, async_sessionmaker[Asyn
     engine, factory = create_session_factory(database_url())
     try:
         async with engine.begin() as connection:
-            await connection.execute(text("TRUNCATE companies, company_logs, models, model_logs"))
+            await connection.execute(
+                text(
+                    "TRUNCATE companies, company_logs, models, model_logs, countries, country_logs"
+                )
+            )
         yield engine, factory
     finally:
         await engine.dispose()
@@ -73,10 +81,32 @@ async def model_log_service(database) -> ModelLogUseCases:
 
 
 @pytest.fixture
+def country_cursor_codec() -> SignedCountryCursor:
+    return SignedCountryCursor("test-only-signing-key-with-at-least-32-bytes")
+
+
+@pytest.fixture
+async def country_service(database, country_cursor_codec) -> CountryUseCases:
+    _, factory = database
+    return CountryUseCases(lambda: SqlAlchemyUnitOfWork(factory), country_cursor_codec)
+
+
+@pytest.fixture
+async def country_log_service(database) -> CountryLogUseCases:
+    _, factory = database
+    return CountryLogUseCases(
+        lambda: SqlAlchemyUnitOfWork(factory),
+        SignedCountryLogCursor("test-only-signing-key-with-at-least-32-bytes"),
+    )
+
+
+@pytest.fixture
 async def client(
-    service, log_service, model_service, model_log_service
+    service, log_service, model_service, model_log_service, country_service, country_log_service
 ) -> AsyncIterator[AsyncClient]:
-    app = create_app(service, log_service, model_service, model_log_service)
+    app = create_app(
+        service, log_service, model_service, model_log_service, country_service, country_log_service
+    )
     async with app.router.lifespan_context(app):
         async with AsyncClient(
             transport=ASGITransport(app=app, raise_app_exceptions=False), base_url="http://test"

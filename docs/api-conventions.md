@@ -1,6 +1,6 @@
 # API 응답·오류·페이지네이션 규약
 
-Company·Model 구현에 사용하는 계약을 확정했다. 인증·권한 및 다른 차원의 상세 계약은 이번 구현 범위 밖이다. 공통 카탈로그의 인증 오류는 프레임워크 오류 변환을 위한 정의이며 인증 기능 구현을 의미하지 않는다.
+Company·Model·Country 구현에 사용하는 계약을 확정했다. 인증·권한 및 다른 차원의 상세 계약은 이번 구현 범위 밖이다. 공통 카탈로그의 인증 오류는 프레임워크 오류 변환을 위한 정의이며 인증 기능 구현을 의미하지 않는다.
 
 ## 성공 응답
 
@@ -146,3 +146,50 @@ Company는 `{dimension}`에 `company`, Model은 `model`을 사용한다. 자동 
 - [공통 스키마](../src/mdm_demo/presentation/schemas/common.py), [카탈로그](../src/mdm_demo/presentation/error_catalog.py), [예외 처리기](../src/mdm_demo/presentation/exception_handlers.py)를 재사용한다.
 - [Company API 테스트](../tests/api/test_company.py)와 [cursor 테스트](../tests/unit/application/test_cursor.py)로 계약을 검증한다. 구체적인 응답 모델은 OpenAPI에 노출한다.
 - 필드·코드·메시지·상태·페이지네이션 변경 시 이 문서, 구현, OpenAPI, 계약 테스트를 함께 갱신한다. 공개 계약의 의미를 변경할 때는 호환성 영향과 전환 방법을 기록한다.
+
+## Country 오류 계약
+
+런타임 오류 카탈로그·OpenAPI·테스트에 적용한 Country 전용 계약이다.
+
+| 조건 | 코드 | HTTP | 기본 메시지 |
+| --- | --- | --- | --- |
+| 정규화된 국가명 중복 | `COUNTRY_NAME_DUPLICATE` | 409 | 이미 존재하는 국가명입니다. |
+| 정규화된 국가 코드 중복 | `COUNTRY_CODE_DUPLICATE` | 409 | 이미 존재하는 국가 코드입니다. |
+| 입력 형식 오류 | `VALIDATION_ERROR` | 422 | 요청 값이 올바르지 않습니다. |
+
+Country는 코드 자동 생성 기능이 없으므로 자동 생성 전용 오류를 사용하지 않는다. 업무 규칙은 [Country](features/dimension/country.md)를 따른다. HTTP 계약은 아래 절을 따른다.
+
+## Country API 경로
+
+- CRUD: `/countries`, `/countries/{country_id}`.
+- 국가별 이력: `/countries/{country_id}/logs`.
+- 로그 단건: `/country-logs/{log_id}`.
+
+## Country HTTP 계약
+
+공통 응답·오류·페이지네이션 구조를 재사용한다.
+
+| 메서드·경로 | 입력 | 성공 |
+| --- | --- | --- |
+| POST `/countries` | 문자열 `name`, `code` 모두 필수 | 201 단건 |
+| GET `/countries` | 선택적 `cursor`, `limit` | 200 목록 |
+| GET `/countries/{country_id}` | Country UUID | 200 단건 |
+| PATCH `/countries/{country_id}` | 문자열 `name` 필수 | 200 단건 |
+| DELETE `/countries/{country_id}` | Country UUID | 204, 본문 없음 |
+| GET `/countries/{country_id}/logs` | 원래 Country UUID, 선택적 `cursor`, `limit` | 200 이력 목록 |
+| GET `/country-logs/{log_id}` | 로그 UUID | 200 이력 단건 |
+
+- Country 응답은 `id/name/code/created_at/updated_at`, 로그 응답은 `id/country_id/operation/occurred_at/request_id/before/after`다. UUID v4·UTC 시각과 기존 공통 `data/meta` 응답을 사용한다.
+- 필수 필드 생략·명시적 null·빈 값·공백만 있는 값·잘못된 타입·알 수 없는 JSON 필드는 422다. PATCH의 code 및 빈 객체도 422다.
+- 없는 Country 조회·수정·삭제, 삭제 후 조회·재삭제, 없는 로그 단건은 404다. 잘못된 UUID 형식은 422다.
+- 이력 목록은 현재 Country 존재를 검사하지 않는다. 기록 없는 UUID는 200 빈 목록이며 삭제한 Country의 기록도 조회한다.
+- 목록의 limit은 기본 20, 허용 범위 1~100이다. Country는 (created_at ASC, id ASC), 이력은 (occurred_at ASC, id ASC)로 정렬한다.
+- 잘못된·빈·변조된 cursor, 다른 차원·다른 목록·다른 대상 이력의 cursor는 400 INVALID_CURSOR다. 같은 목록에서 limit 변경은 허용한다. 첫 페이지에는 cursor를 생략한다.
+- 검색·선택 정렬·총 개수는 제공하지 않는다. 기존 차원처럼 알 수 없는 query 파라미터는 무시한다.
+- 이름·코드 중복은 위 합의된 전용 409 오류로 구분한다. 동시에 둘 다 중복인 경우에는 DB가 보고한 알려진 제약에 해당하는 오류 하나를 반환하며 우선순위를 보장하지 않는다.
+- 이름 길이는 공백 제거·대문자 변환·NFC 정규화가 끝난 저장 값을 기준으로 판단한다. 공통 오류 details는 name에 body.name, code에 body.code를 사용한다.
+- 목록 순회는 총 개수·스냅샷 일관성·실제 commit 순서를 보장하지 않는다. 로그 자동 만료, 행위자 저장, 인증·권한, 멱등성 키·자동 재시도는 이번 범위에서 제외한다.
+
+- Country 생성은 name·code가 필수다. 이름은 trim → 대문자 → NFC 후 1~100자이며 유일하다. NUL·단독 surrogate는 거부한다. 코드는 trim 후 ASCII 영문 3자로 검증하고 대문자로 저장하며 유일하다. 코드 자동 생성·ISO 존재 검증은 하지 않는다.
+- PATCH는 name만 받으며 정규화된 이름이 같으면 수정 시각·로그를 변경하지 않는다. 물리 삭제 후 이름·코드 재사용은 새 UUID로 처리한다.
+- [Country 예제 원본](../src/mdm_demo/presentation/schemas/country_examples.py)과 [예제 실행 테스트](../tests/api/test_country_openapi_examples.py)로 정상·실패·경계값을 검증한다.
