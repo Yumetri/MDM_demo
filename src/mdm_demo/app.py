@@ -8,10 +8,14 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from scalar_fastapi import AgentScalarConfig, add_scalar_reference
 
+from mdm_demo.application.use_cases.brand import BrandUseCases
+from mdm_demo.application.use_cases.brand_log import BrandLogUseCases
 from mdm_demo.application.use_cases.company import CompanyUseCases
 from mdm_demo.application.use_cases.company_log import CompanyLogUseCases
 from mdm_demo.application.use_cases.model import ModelUseCases
 from mdm_demo.application.use_cases.model_log import ModelLogUseCases
+from mdm_demo.infrastructure.pagination.brand_cursor import SignedBrandCursor
+from mdm_demo.infrastructure.pagination.brand_log_cursor import SignedBrandLogCursor
 from mdm_demo.infrastructure.pagination.company_cursor import SignedCompanyCursor
 from mdm_demo.infrastructure.pagination.company_log_cursor import SignedCompanyLogCursor
 from mdm_demo.infrastructure.pagination.model_cursor import SignedModelCursor
@@ -21,6 +25,8 @@ from mdm_demo.infrastructure.persistence.unit_of_work import SqlAlchemyUnitOfWor
 from mdm_demo.presentation.exception_handlers import register_exception_handlers
 from mdm_demo.presentation.openapi import register_openapi_examples
 from mdm_demo.presentation.request_context import RequestContextMiddleware
+from mdm_demo.presentation.routers.brand import router as brand_router
+from mdm_demo.presentation.routers.brand_log import router as brand_log_router
 from mdm_demo.presentation.routers.company import router as company_router
 from mdm_demo.presentation.routers.company_log import router as company_log_router
 from mdm_demo.presentation.routers.health import router as health_router
@@ -34,6 +40,8 @@ def create_app(
     log_service: CompanyLogUseCases | None = None,
     model_service: ModelUseCases | None = None,
     model_log_service: ModelLogUseCases | None = None,
+    brand_service: BrandUseCases | None = None,
+    brand_log_service: BrandLogUseCases | None = None,
 ) -> FastAPI:
     """Build default services, or use a complete set of caller-provided services."""
     services = {
@@ -41,11 +49,13 @@ def create_app(
         "log_service": log_service,
         "model_service": model_service,
         "model_log_service": model_log_service,
+        "brand_service": brand_service,
+        "brand_log_service": brand_log_service,
     }
     missing = [name for name, value in services.items() if value is None]
     if missing and len(missing) != len(services):
         raise ValueError(
-            "Provide all four services or omit all of them. Missing: " + ", ".join(missing)
+            "Provide all six services or omit all of them. Missing: " + ", ".join(missing)
         )
 
     @asynccontextmanager
@@ -55,6 +65,8 @@ def create_app(
             app.state.company_log_use_cases = log_service
             app.state.model_use_cases = model_service
             app.state.model_log_use_cases = model_log_service
+            app.state.brand_use_cases = brand_service
+            app.state.brand_log_use_cases = brand_log_service
             yield
             return
         cursor = SignedCompanyCursor(os.environ["CURSOR_SIGNING_KEY"])
@@ -71,6 +83,14 @@ def create_app(
         app.state.model_log_use_cases = ModelLogUseCases(
             lambda: SqlAlchemyUnitOfWork(factory),
             SignedModelLogCursor(os.environ["CURSOR_SIGNING_KEY"]),
+        )
+        app.state.brand_use_cases = BrandUseCases(
+            lambda: SqlAlchemyUnitOfWork(factory),
+            SignedBrandCursor(os.environ["CURSOR_SIGNING_KEY"]),
+        )
+        app.state.brand_log_use_cases = BrandLogUseCases(
+            lambda: SqlAlchemyUnitOfWork(factory),
+            SignedBrandLogCursor(os.environ["CURSOR_SIGNING_KEY"]),
         )
         try:
             yield
@@ -92,6 +112,8 @@ def create_app(
     app.include_router(company_log_router)
     app.include_router(model_router)
     app.include_router(model_log_router)
+    app.include_router(brand_router)
+    app.include_router(brand_log_router)
     register_openapi_examples(app)
     add_scalar_reference(
         app,

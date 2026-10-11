@@ -19,6 +19,7 @@ typecheck: check-environment
 	uv run --locked pyrefly check --min-severity warn
 
 format: check-environment
+	uv run --locked ruff check --select I --fix .
 	uv run --locked ruff format .
 
 .PHONY: up down logs ps compose-check smoke check-container

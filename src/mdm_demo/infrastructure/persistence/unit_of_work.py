@@ -5,10 +5,18 @@ from typing import Self
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from mdm_demo.application.ports.repositories.brand_log_repository import BrandLogRepository
+from mdm_demo.application.ports.repositories.brand_repository import BrandRepository
 from mdm_demo.application.ports.repositories.company_log_repository import CompanyLogRepository
 from mdm_demo.application.ports.repositories.company_repository import CompanyRepository
 from mdm_demo.application.ports.repositories.model_log_repository import ModelLogRepository
 from mdm_demo.application.ports.repositories.model_repository import ModelRepository
+from mdm_demo.infrastructure.persistence.repositories.brand_log_repository import (
+    SqlAlchemyBrandLogRepository,
+)
+from mdm_demo.infrastructure.persistence.repositories.brand_repository import (
+    SqlAlchemyBrandRepository,
+)
 from mdm_demo.infrastructure.persistence.repositories.company_log_repository import (
     SqlAlchemyCompanyLogRepository,
 )
@@ -28,6 +36,8 @@ class SqlAlchemyUnitOfWork:
     company_logs: CompanyLogRepository
     models: ModelRepository
     model_logs: ModelLogRepository
+    brands: BrandRepository
+    brand_logs: BrandLogRepository
 
     def __init__(self, factory: Callable[[], AsyncSession]) -> None:
         self._factory = factory
@@ -41,6 +51,8 @@ class SqlAlchemyUnitOfWork:
         self.company_logs = SqlAlchemyCompanyLogRepository(self._session)
         self.models = SqlAlchemyModelRepository(self._session)
         self.model_logs = SqlAlchemyModelLogRepository(self._session)
+        self.brands = SqlAlchemyBrandRepository(self._session)
+        self.brand_logs = SqlAlchemyBrandLogRepository(self._session)
         return self
 
     async def commit(self) -> None:

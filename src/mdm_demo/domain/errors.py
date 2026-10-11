@@ -19,3 +19,9 @@ class InvalidModelValue(DomainError):
     def __init__(self, field: str) -> None:
         self.field = field
         super().__init__(field)
+
+
+class InvalidBrandValue(DomainError):
+    def __init__(self, field: str) -> None:
+        self.field = field
+        super().__init__(field)

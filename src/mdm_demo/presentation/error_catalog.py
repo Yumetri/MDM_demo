@@ -20,6 +20,7 @@ ERRORS = {
     "METHOD_NOT_ALLOWED": ErrorSpec(405, "지원하지 않는 요청 방식입니다."),
     "CONFLICT": ErrorSpec(409, "현재 상태에서는 요청을 처리할 수 없습니다."),
     "INTERNAL_ERROR": ErrorSpec(500, "요청 처리 중 오류가 발생했습니다."),
+    "BRAND_CODE_DUPLICATE": ErrorSpec(409, "이미 존재하는 브랜드 코드입니다."),
     "MODEL_CODE_DUPLICATE": ErrorSpec(409, "이미 존재하는 모델 코드입니다."),
     "COMPANY_CODE_DUPLICATE": ErrorSpec(409, "이미 존재하는 회사 코드입니다."),
     "DIMENSION_AUTO_CODE_DUPLICATE": ErrorSpec(
@@ -53,4 +54,6 @@ ERROR_RESPONSES: dict[int | str, dict[str, Any]] = {
 def error_message(code: str, dimension: str = "company") -> str:
     if code == "DIMENSION_AUTO_CODE_UNAVAILABLE" and dimension == "model":
         return "model에서 코드를 자동으로 생성할 수 없습니다. 코드를 직접 입력해 주세요."
+    if code == "DIMENSION_AUTO_CODE_UNAVAILABLE" and dimension == "brand":
+        return "brand에서 코드를 자동으로 생성할 수 없습니다. 코드를 직접 입력해 주세요."
     return ERRORS[code].message
