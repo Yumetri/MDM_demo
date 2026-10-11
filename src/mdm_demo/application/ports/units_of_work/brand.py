@@ -8,3 +8,7 @@ from mdm_demo.application.ports.unit_of_work import UnitOfWork
 class BrandUnitOfWork(UnitOfWork, Protocol):
     brands: BrandRepository
     brand_logs: BrandLogRepository
+
+
+class BrandLogUnitOfWork(UnitOfWork, Protocol):
+    brand_logs: BrandLogRepository

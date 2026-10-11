@@ -5,11 +5,11 @@ from collections.abc import AsyncGenerator, Sequence
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
-from fastapi.routing import APIRoute, iter_route_contexts
 from scalar_fastapi import AgentScalarConfig, add_scalar_reference
 
 from mdm_demo.composition.feature import FeatureModule
 from mdm_demo.composition.registry import DEFAULT_MODULES
+from mdm_demo.composition.routes import validate_http_routes
 from mdm_demo.composition.runtime import RuntimeFactory, production_runtime
 from mdm_demo.presentation.exception_handlers import register_exception_handlers
 from mdm_demo.presentation.openapi import register_openapi_examples
@@ -70,14 +70,6 @@ def create_app(
     for module in selected:
         for router in module.routers:
             app.include_router(router)
-    operations: set[tuple[str, str]] = set()
-    for route in iter_route_contexts(app.routes):
-        if isinstance(route.original_route, APIRoute) and route.path_format is not None:
-            for method in route.methods or ():
-                key = (route.path_format, method)
-                if key in operations:
-                    raise ValueError(f"Duplicate route: {method} {route.path_format}")
-                operations.add(key)
     register_openapi_examples(app)
     add_scalar_reference(
         app,
@@ -86,6 +78,7 @@ def create_app(
         agent=AgentScalarConfig(disabled=True),
         telemetry=False,
     )
+    validate_http_routes(app.routes, reserved_paths={"/docs", "/openapi.json", "/health"})
     return app
 
 
