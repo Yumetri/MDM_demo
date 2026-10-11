@@ -3,7 +3,7 @@ from uuid import UUID
 
 from mdm_demo.application.dto.country_log import CountryLogDTO, CountryLogPage
 from mdm_demo.application.errors import ApplicationError
-from mdm_demo.application.ports.cursor import CountryLogBoundary, CountryLogCursor
+from mdm_demo.application.ports.cursors.country import CountryLogBoundary, CountryLogCursor
 from mdm_demo.application.ports.unit_of_work import UnitOfWork
 
 

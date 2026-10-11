@@ -1,7 +1,7 @@
 from typing import Protocol
 from uuid import UUID
 
-from mdm_demo.application.ports.cursor import ModelLogBoundary
+from mdm_demo.application.ports.cursors.model import ModelLogBoundary
 from mdm_demo.domain.entities.model_log import ModelLog
 
 

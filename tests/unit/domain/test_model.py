@@ -8,7 +8,8 @@ import pytest
 
 from mdm_demo.domain.entities.model import Model
 from mdm_demo.domain.entities.model_log import ModelLog
-from mdm_demo.domain.errors import AutoCodeUnavailable, InvalidModelValue
+from mdm_demo.domain.errors import AutoCodeUnavailable
+from mdm_demo.domain.errors.model import InvalidModelValue
 from mdm_demo.domain.value_objects.model_code import ModelCode
 from mdm_demo.domain.value_objects.model_name import ModelName
 

@@ -1,7 +1,8 @@
 import re
 from dataclasses import dataclass
 
-from mdm_demo.domain.errors import AutoCodeUnavailable, InvalidModelValue
+from mdm_demo.domain.errors import AutoCodeUnavailable
+from mdm_demo.domain.errors.model import InvalidModelValue
 from mdm_demo.domain.value_objects.model_name import ModelName
 
 

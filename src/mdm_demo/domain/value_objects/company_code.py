@@ -1,7 +1,8 @@
 import re
 from dataclasses import dataclass
 
-from mdm_demo.domain.errors import AutoCodeUnavailable, InvalidCompanyValue
+from mdm_demo.domain.errors import AutoCodeUnavailable
+from mdm_demo.domain.errors.company import InvalidCompanyValue
 from mdm_demo.domain.value_objects.company_name import CompanyName
 
 

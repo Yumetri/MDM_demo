@@ -4,8 +4,8 @@ from sqlalchemy import delete, select, tuple_, update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from mdm_demo.application.errors import DuplicateModelCode
-from mdm_demo.application.ports.cursor import ModelBoundary
+from mdm_demo.application.errors.model import DuplicateModelCode
+from mdm_demo.application.ports.cursors.model import ModelBoundary
 from mdm_demo.domain.entities.model import Model
 from mdm_demo.infrastructure.persistence.mappers import model_mapper
 from mdm_demo.infrastructure.persistence.models.model import ModelModel

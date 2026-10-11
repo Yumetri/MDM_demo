@@ -8,7 +8,8 @@ import pytest
 
 from mdm_demo.domain.entities.company import Company
 from mdm_demo.domain.entities.company_log import CompanyLog
-from mdm_demo.domain.errors import AutoCodeUnavailable, InvalidCompanyValue
+from mdm_demo.domain.errors import AutoCodeUnavailable
+from mdm_demo.domain.errors.company import InvalidCompanyValue
 from mdm_demo.domain.value_objects.company_code import CompanyCode
 from mdm_demo.domain.value_objects.company_name import CompanyName
 

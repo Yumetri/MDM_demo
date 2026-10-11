@@ -1,7 +1,7 @@
 import re
 from dataclasses import dataclass
 
-from mdm_demo.domain.errors import InvalidCountryValue
+from mdm_demo.domain.errors.country import InvalidCountryValue
 
 
 @dataclass(frozen=True)

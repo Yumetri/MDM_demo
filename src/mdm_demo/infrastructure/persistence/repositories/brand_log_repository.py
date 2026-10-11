@@ -3,7 +3,7 @@ from uuid import UUID
 from sqlalchemy import select, tuple_
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from mdm_demo.application.ports.cursor import BrandLogBoundary
+from mdm_demo.application.ports.cursors.brand import BrandLogBoundary
 from mdm_demo.domain.entities.brand_log import BrandLog
 from mdm_demo.infrastructure.persistence.mappers.brand_log_mapper import to_domain, to_model
 from mdm_demo.infrastructure.persistence.models.brand_log import BrandLogModel

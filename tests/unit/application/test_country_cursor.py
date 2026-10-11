@@ -8,7 +8,7 @@ from uuid import uuid4
 import pytest
 
 from mdm_demo.application.errors import ApplicationError
-from mdm_demo.application.ports.cursor import CountryBoundary
+from mdm_demo.application.ports.cursors.country import CountryBoundary
 from mdm_demo.infrastructure.pagination.country_cursor import SignedCountryCursor
 
 

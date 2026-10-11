@@ -8,7 +8,8 @@ import pytest
 
 from mdm_demo.domain.entities.brand import Brand
 from mdm_demo.domain.entities.brand_log import BrandLog
-from mdm_demo.domain.errors import AutoCodeUnavailable, InvalidBrandValue
+from mdm_demo.domain.errors import AutoCodeUnavailable
+from mdm_demo.domain.errors.brand import InvalidBrandValue
 from mdm_demo.domain.value_objects.brand_code import BrandCode
 from mdm_demo.domain.value_objects.brand_name import BrandName
 

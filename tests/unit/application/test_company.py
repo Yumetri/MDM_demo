@@ -3,7 +3,8 @@ from uuid import uuid4
 
 import pytest
 
-from mdm_demo.application.errors import ApplicationError, DuplicateCompanyCode
+from mdm_demo.application.errors import ApplicationError
+from mdm_demo.application.errors.company import DuplicateCompanyCode
 from mdm_demo.application.use_cases.company import CompanyUseCases
 from mdm_demo.domain.entities.company import Company
 

@@ -5,7 +5,7 @@ from uuid import uuid4
 import pytest
 
 from mdm_demo.application.errors import ApplicationError
-from mdm_demo.application.ports.cursor import CountryLogBoundary
+from mdm_demo.application.ports.cursors.country import CountryLogBoundary
 from mdm_demo.application.use_cases.country_log import CountryLogUseCases
 from mdm_demo.infrastructure.pagination.country_log_cursor import SignedCountryLogCursor
 

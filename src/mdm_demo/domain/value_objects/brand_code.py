@@ -1,7 +1,8 @@
 import re
 from dataclasses import dataclass
 
-from mdm_demo.domain.errors import AutoCodeUnavailable, InvalidBrandValue
+from mdm_demo.domain.errors import AutoCodeUnavailable
+from mdm_demo.domain.errors.brand import InvalidBrandValue
 from mdm_demo.domain.value_objects.brand_name import BrandName
 
 

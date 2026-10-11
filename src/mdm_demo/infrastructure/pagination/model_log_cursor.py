@@ -1,6 +1,6 @@
 from uuid import UUID
 
-from mdm_demo.application.ports.cursor import ModelBoundary, ModelLogBoundary
+from mdm_demo.application.ports.cursors.model import ModelBoundary, ModelLogBoundary
 from mdm_demo.infrastructure.pagination.model_cursor import SignedModelCursor
 
 

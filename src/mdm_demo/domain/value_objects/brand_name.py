@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 
-from mdm_demo.domain.errors import InvalidBrandValue
+from mdm_demo.domain.errors.brand import InvalidBrandValue
 
 
 @dataclass(frozen=True)

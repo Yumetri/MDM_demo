@@ -1,6 +1,6 @@
 from uuid import UUID
 
-from mdm_demo.application.ports.cursor import CountryBoundary, CountryLogBoundary
+from mdm_demo.application.ports.cursors.country import CountryBoundary, CountryLogBoundary
 from mdm_demo.infrastructure.pagination.country_cursor import SignedCountryCursor
 
 

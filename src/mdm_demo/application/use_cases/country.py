@@ -3,12 +3,13 @@ from contextlib import contextmanager
 from uuid import UUID
 
 from mdm_demo.application.dto.country import CountryDTO, CountryPage
-from mdm_demo.application.errors import ApplicationError, DuplicateCountryCode, DuplicateCountryName
-from mdm_demo.application.ports.cursor import CountryBoundary, CountryCursor
+from mdm_demo.application.errors import ApplicationError
+from mdm_demo.application.errors.country import DuplicateCountryCode, DuplicateCountryName
+from mdm_demo.application.ports.cursors.country import CountryBoundary, CountryCursor
 from mdm_demo.application.ports.unit_of_work import UnitOfWork
 from mdm_demo.domain.entities.country import Country
 from mdm_demo.domain.entities.country_log import CountryLog
-from mdm_demo.domain.errors import InvalidCountryValue
+from mdm_demo.domain.errors.country import InvalidCountryValue
 
 
 @contextmanager

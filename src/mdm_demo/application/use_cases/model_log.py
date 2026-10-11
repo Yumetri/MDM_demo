@@ -3,7 +3,7 @@ from uuid import UUID
 
 from mdm_demo.application.dto.model_log import ModelLogDTO, ModelLogPage
 from mdm_demo.application.errors import ApplicationError
-from mdm_demo.application.ports.cursor import ModelLogBoundary, ModelLogCursor
+from mdm_demo.application.ports.cursors.model import ModelLogBoundary, ModelLogCursor
 from mdm_demo.application.ports.unit_of_work import UnitOfWork
 
 
