@@ -8,7 +8,7 @@ from fastapi.responses import JSONResponse
 from starlette.exceptions import HTTPException
 
 from mdm_demo.application.errors import ApplicationError
-from mdm_demo.presentation.error_catalog import DETAIL_MESSAGES, ERRORS, HTTP_CODES
+from mdm_demo.presentation.error_catalog import DETAIL_MESSAGES, ERRORS, HTTP_CODES, error_message
 from mdm_demo.presentation.schemas.common import ErrorBody, ErrorDetail, ErrorResponse, Meta
 
 logger = logging.getLogger(__name__)
@@ -20,11 +20,12 @@ def error_response(
     details: list[ErrorDetail] | None = None,
     headers: Mapping[str, str] | None = None,
     status: int | None = None,
+    dimension: str = "company",
 ) -> JSONResponse:
     spec = ERRORS[code]
     request_id: UUID = request.state.request_id
     body = ErrorResponse(
-        error=ErrorBody(code=code, message=spec.message, details=details or []),
+        error=ErrorBody(code=code, message=error_message(code, dimension), details=details or []),
         meta=Meta(request_id=request_id),
     )
     return JSONResponse(
@@ -39,9 +40,11 @@ async def application_error(request: Request, exc: Exception) -> JSONResponse:
     details = []
     if exc.field is not None:
         details.append(
-            ErrorDetail(field=exc.field, code=exc.code, message=ERRORS[exc.code].message)
+            ErrorDetail(
+                field=exc.field, code=exc.code, message=error_message(exc.code, exc.dimension)
+            )
         )
-    return error_response(request, exc.code, details)
+    return error_response(request, exc.code, details, dimension=exc.dimension)
 
 
 async def validation_error(request: Request, exc: Exception) -> JSONResponse:

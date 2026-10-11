@@ -7,17 +7,27 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from mdm_demo.application.ports.repositories.company_log_repository import CompanyLogRepository
 from mdm_demo.application.ports.repositories.company_repository import CompanyRepository
+from mdm_demo.application.ports.repositories.model_log_repository import ModelLogRepository
+from mdm_demo.application.ports.repositories.model_repository import ModelRepository
 from mdm_demo.infrastructure.persistence.repositories.company_log_repository import (
     SqlAlchemyCompanyLogRepository,
 )
 from mdm_demo.infrastructure.persistence.repositories.company_repository import (
     SqlAlchemyCompanyRepository,
 )
+from mdm_demo.infrastructure.persistence.repositories.model_log_repository import (
+    SqlAlchemyModelLogRepository,
+)
+from mdm_demo.infrastructure.persistence.repositories.model_repository import (
+    SqlAlchemyModelRepository,
+)
 
 
 class SqlAlchemyUnitOfWork:
     companies: CompanyRepository
     company_logs: CompanyLogRepository
+    models: ModelRepository
+    model_logs: ModelLogRepository
 
     def __init__(self, factory: Callable[[], AsyncSession]) -> None:
         self._factory = factory
@@ -29,6 +39,8 @@ class SqlAlchemyUnitOfWork:
         self._session = self._factory()
         self.companies = SqlAlchemyCompanyRepository(self._session)
         self.company_logs = SqlAlchemyCompanyLogRepository(self._session)
+        self.models = SqlAlchemyModelRepository(self._session)
+        self.model_logs = SqlAlchemyModelLogRepository(self._session)
         return self
 
     async def commit(self) -> None:

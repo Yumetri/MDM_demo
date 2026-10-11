@@ -10,8 +10,12 @@ from scalar_fastapi import AgentScalarConfig, add_scalar_reference
 
 from mdm_demo.application.use_cases.company import CompanyUseCases
 from mdm_demo.application.use_cases.company_log import CompanyLogUseCases
+from mdm_demo.application.use_cases.model import ModelUseCases
+from mdm_demo.application.use_cases.model_log import ModelLogUseCases
 from mdm_demo.infrastructure.pagination.company_cursor import SignedCompanyCursor
 from mdm_demo.infrastructure.pagination.company_log_cursor import SignedCompanyLogCursor
+from mdm_demo.infrastructure.pagination.model_cursor import SignedModelCursor
+from mdm_demo.infrastructure.pagination.model_log_cursor import SignedModelLogCursor
 from mdm_demo.infrastructure.persistence.session import create_session_factory, database_url
 from mdm_demo.infrastructure.persistence.unit_of_work import SqlAlchemyUnitOfWork
 from mdm_demo.presentation.exception_handlers import register_exception_handlers
@@ -20,17 +24,24 @@ from mdm_demo.presentation.request_context import RequestContextMiddleware
 from mdm_demo.presentation.routers.company import router as company_router
 from mdm_demo.presentation.routers.company_log import router as company_log_router
 from mdm_demo.presentation.routers.health import router as health_router
+from mdm_demo.presentation.routers.model import router as model_router
+from mdm_demo.presentation.routers.model_log import router as model_log_router
 from mdm_demo.presentation.schemas.examples import WORKFLOW
 
 
 def create_app(
-    service: CompanyUseCases | None = None, log_service: CompanyLogUseCases | None = None
+    service: CompanyUseCases | None = None,
+    log_service: CompanyLogUseCases | None = None,
+    model_service: ModelUseCases | None = None,
+    model_log_service: ModelLogUseCases | None = None,
 ) -> FastAPI:
     @asynccontextmanager
     async def lifespan(app: FastAPI) -> AsyncGenerator[None]:
         if service is not None:
             app.state.company_use_cases = service
             app.state.company_log_use_cases = log_service
+            app.state.model_use_cases = model_service
+            app.state.model_log_use_cases = model_log_service
             yield
             return
         cursor = SignedCompanyCursor(os.environ["CURSOR_SIGNING_KEY"])
@@ -39,6 +50,14 @@ def create_app(
         app.state.company_log_use_cases = CompanyLogUseCases(
             lambda: SqlAlchemyUnitOfWork(factory),
             SignedCompanyLogCursor(os.environ["CURSOR_SIGNING_KEY"]),
+        )
+        app.state.model_use_cases = ModelUseCases(
+            lambda: SqlAlchemyUnitOfWork(factory),
+            SignedModelCursor(os.environ["CURSOR_SIGNING_KEY"]),
+        )
+        app.state.model_log_use_cases = ModelLogUseCases(
+            lambda: SqlAlchemyUnitOfWork(factory),
+            SignedModelLogCursor(os.environ["CURSOR_SIGNING_KEY"]),
         )
         try:
             yield
@@ -58,6 +77,8 @@ def create_app(
     app.include_router(health_router)
     app.include_router(company_router)
     app.include_router(company_log_router)
+    app.include_router(model_router)
+    app.include_router(model_log_router)
     register_openapi_examples(app)
     add_scalar_reference(
         app,

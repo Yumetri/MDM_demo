@@ -9,8 +9,12 @@ from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, async_sessionmaker
 from mdm_demo.app import create_app
 from mdm_demo.application.use_cases.company import CompanyUseCases
 from mdm_demo.application.use_cases.company_log import CompanyLogUseCases
+from mdm_demo.application.use_cases.model import ModelUseCases
+from mdm_demo.application.use_cases.model_log import ModelLogUseCases
 from mdm_demo.infrastructure.pagination.company_cursor import SignedCompanyCursor
 from mdm_demo.infrastructure.pagination.company_log_cursor import SignedCompanyLogCursor
+from mdm_demo.infrastructure.pagination.model_cursor import SignedModelCursor
+from mdm_demo.infrastructure.pagination.model_log_cursor import SignedModelLogCursor
 from mdm_demo.infrastructure.persistence.session import create_session_factory, database_url
 from mdm_demo.infrastructure.persistence.unit_of_work import SqlAlchemyUnitOfWork
 
@@ -22,7 +26,7 @@ async def database() -> AsyncIterator[tuple[AsyncEngine, async_sessionmaker[Asyn
     engine, factory = create_session_factory(database_url())
     try:
         async with engine.begin() as connection:
-            await connection.execute(text("TRUNCATE companies, company_logs"))
+            await connection.execute(text("TRUNCATE companies, company_logs, models, model_logs"))
         yield engine, factory
     finally:
         await engine.dispose()
@@ -49,8 +53,30 @@ async def log_service(database) -> CompanyLogUseCases:
 
 
 @pytest.fixture
-async def client(service, log_service) -> AsyncIterator[AsyncClient]:
-    app = create_app(service, log_service)
+def model_cursor_codec() -> SignedModelCursor:
+    return SignedModelCursor("test-only-signing-key-with-at-least-32-bytes")
+
+
+@pytest.fixture
+async def model_service(database, model_cursor_codec) -> ModelUseCases:
+    _, factory = database
+    return ModelUseCases(lambda: SqlAlchemyUnitOfWork(factory), model_cursor_codec)
+
+
+@pytest.fixture
+async def model_log_service(database) -> ModelLogUseCases:
+    _, factory = database
+    return ModelLogUseCases(
+        lambda: SqlAlchemyUnitOfWork(factory),
+        SignedModelLogCursor("test-only-signing-key-with-at-least-32-bytes"),
+    )
+
+
+@pytest.fixture
+async def client(
+    service, log_service, model_service, model_log_service
+) -> AsyncIterator[AsyncClient]:
+    app = create_app(service, log_service, model_service, model_log_service)
     async with app.router.lifespan_context(app):
         async with AsyncClient(
             transport=ASGITransport(app=app, raise_app_exceptions=False), base_url="http://test"
