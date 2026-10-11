@@ -242,6 +242,7 @@ def responses(
                 "COMPANY_CODE_DUPLICATE",
                 "MODEL_CODE_DUPLICATE",
                 "COUNTRY_CODE_DUPLICATE",
+                "BRAND_CODE_DUPLICATE",
                 "DIMENSION_AUTO_CODE_DUPLICATE",
                 "DIMENSION_AUTO_CODE_UNAVAILABLE",
             }
@@ -321,6 +322,14 @@ WORKFLOW += """
 Model도 동일한 순서로 `/models`, `/models/{model_id}/logs`, `/model-logs/{log_id}`에서 실행합니다.
 Model 자동 생성 예제는 Galaxy S24 → GAL입니다.
 직접 코드는 양끝 공백을 제거하고 영문·숫자 3자를 대문자로 변환합니다.
+"""
+
+
+WORKFLOW += """
+Brand도 같은 순서로 `/brands`, `/brands/{brand_id}/logs`, `/brand-logs/{log_id}`에서 실행합니다.
+Brand 자동 생성 예제는 Galaxy → GAL이며, Company·Model과 독립적으로 관리합니다.
+직접 코드는 양끝 공백 제거 후 영문·숫자 3자를 대문자로 저장합니다.
+이름을 변경해도 코드는 유지하며 동일한 이름 수정은 이력을 추가하지 않습니다.
 """
 
 

@@ -6,6 +6,8 @@ from sqlalchemy.engine import Connection
 from sqlalchemy.ext.asyncio import create_async_engine
 
 from mdm_demo.infrastructure.persistence.models.base import Base
+from mdm_demo.infrastructure.persistence.models.brand import BrandModel  # noqa: F401
+from mdm_demo.infrastructure.persistence.models.brand_log import BrandLogModel  # noqa: F401
 from mdm_demo.infrastructure.persistence.models.company import CompanyModel  # noqa: F401
 from mdm_demo.infrastructure.persistence.models.company_log import CompanyLogModel  # noqa: F401
 from mdm_demo.infrastructure.persistence.models.country import CountryModel  # noqa: F401

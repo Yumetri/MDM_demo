@@ -23,3 +23,7 @@ class DuplicateCountryCode(Exception):
 
 class DuplicateCountryName(Exception):
     """Persistence port signal for the country name UNIQUE constraint."""
+
+
+class DuplicateBrandCode(Exception):
+    """Persistence port signal for the named brand code constraint only."""

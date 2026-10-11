@@ -1,6 +1,6 @@
 # API 응답·오류·페이지네이션 규약
 
-Company·Model·Country 구현에 사용하는 계약을 확정했다. 인증·권한 및 다른 차원의 상세 계약은 이번 구현 범위 밖이다. 공통 카탈로그의 인증 오류는 프레임워크 오류 변환을 위한 정의이며 인증 기능 구현을 의미하지 않는다.
+Company·Model·Brand·Country 구현에 사용하는 계약을 확정했다. 인증·권한 및 다른 차원의 상세 계약은 이번 구현 범위 밖이다. 공통 카탈로그의 인증 오류는 프레임워크 오류 변환을 위한 정의이며 인증 기능 구현을 의미하지 않는다.
 
 ## 성공 응답
 
@@ -86,6 +86,50 @@ Company·Model·Country 구현에 사용하는 계약을 확정했다. 인증·�
 - `(occurred_at ASC, id ASC)`로 정렬하며 기본 20개·1~100개다. cursor는 대상 Model UUID와 조회·정렬에 묶는다. 다른 Model·다른 차원·다른 목록의 cursor는 `INVALID_CURSOR`/400이다. 동일 목록의 limit 변경은 허용한다.
 - 실제 commit 순서·총 개수·스냅샷 일관성은 보장하지 않는다. 로그 직접 생성·수정·삭제 API, 통합 이력 검색, 인증·권한은 제공하지 않는다.
 
+## Brand·BrandLog 요청·응답
+
+아래는 이슈 #4에서 사용자와 합의해 구현·OpenAPI에 반영한 계약이다. 업무 규칙은 [Brand](features/dimension/brand.md)·[BrandLog](features/dimension/brand-log.md)를 따른다.
+
+- Brand 필드는 `id`, `name`, `code`, `created_at`, `updated_at`이다. 입력은 브랜드명과 선택적 코드이며 UUID·시각은 서버에서 부여한다.
+- 브랜드명은 양끝 공백 제거 후 1~100자이며 중복을 허용한다. 직접 코드는 양끝 공백 제거 후 ASCII 영문·숫자 3자를 대문자로 저장한다. 코드 생략 시 자동 생성한다.
+- 이름만 수정할 수 있으며 코드는 불변이다. 정규화한 이름이 같으면 200으로 성공하고 데이터·수정 시각·로그는 바꾸지 않는다.
+- 삭제는 물리 삭제이며 이력을 보존한다. 삭제 코드로 재등록하면 새 UUID를 부여한다.
+- `GET /brands/{brand_id}/logs`는 삭제된 Brand의 이력도 조회한다. 기록 없는 UUID는 200 빈 목록을 반환한다.
+- `GET /brand-logs/{log_id}`는 이력 단건을 반환하며 존재하지 않는 로그는 404다.
+- 이력에는 대상 Brand 식별자와 변경 전·후 `id/name/code`, 작업 종류, 기록 시각, 요청 ID를 포함한다.
+- Brand·이력 목록은 cursor 방식이며 기본 20개·최대 100개다. Brand는 생성 시각·UUID 오름차순, 이력은 기록 시각·로그 UUID 오름차순이다.
+- Cursor는 목록 종류별로 구분하고 이력 cursor는 해당 Brand UUID에도 묶는다. 다른 목록·다른 대상에 사용할 수 없다.
+- 동시 수정·삭제는 행 잠금 획득 후 최신 값을 기준으로 처리한다. 별도의 버전 충돌 검사는 제공하지 않는다.
+- 구현 범위는 CRUD·이력 조회다. 인증·권한, 검색·필터, 사용자 지정 정렬, 캐시는 제공하지 않는다. PostgreSQL에서 직접 조회한다.
+
+HTTP 입력·응답·오류 처리는 Model과 동일하게 적용하기로 합의했다. Brand의 경로·식별자·차원별 오류만 아래와 같이 구분한다.
+
+| 메서드·경로 | 입력 | 성공 |
+| --- | --- | --- |
+| POST `/brands` | JSON `name` 필수, `code` 생략 가능 | 201 단건 |
+| GET `/brands` | 선택적 query `cursor`, `limit` | 200 목록 |
+| GET `/brands/{brand_id}` | UUID 식별자 | 200 단건 |
+| PATCH `/brands/{brand_id}` | JSON `name` 필수 | 200 단건 |
+| DELETE `/brands/{brand_id}` | UUID 식별자 | 204, 본문 없음 |
+| GET `/brands/{brand_id}/logs` | UUID 식별자, 선택적 query `cursor`, `limit` | 200 이력 목록 |
+| GET `/brand-logs/{log_id}` | 로그 UUID | 200 이력 단건 |
+
+- 공통 성공·오류 envelope, 서버 발급 요청 ID, UUID v4·UTC 시각, 요청별 이력 ID 구분은 기존 계약을 따른다. 로그의 `request_id`는 변경 당시 요청, `meta.request_id`는 현재 조회 요청이다.
+- 코드 생략만 자동 생성이다. 명시적 null·빈 문자열·공백만 있는 값·잘못된 타입은 422다. 이름의 NUL·단독 surrogate는 거부하고 정상 한글·이모지는 보존한다.
+- 알 수 없는 JSON 필드, PATCH의 `code`·빈 객체는 422다. 정의하지 않은 query 파라미터는 기존 Model처럼 무시하며 검색 조건으로 사용하지 않는다.
+- 없는 Brand의 단건 조회·수정·삭제, 삭제 후 조회·재삭제는 404다. 잘못된 UUID 형식은 422다. 이력 목록은 앞서 정한 대로 기록 없는 UUID에도 200 빈 목록을 반환한다.
+- 이력 응답 필드는 `id`, `brand_id`, `operation`, `occurred_at`, `request_id`, `before`, `after`다. 작업은 `create`·`update`·`delete`이며 생성 전·삭제 후 스냅샷은 null이다.
+- `limit` 허용 범위는 1~100이며 범위 밖은 422다. 잘못된 형식·변조·다른 목록 또는 대상의 cursor는 `INVALID_CURSOR`/400이다. 첫 페이지는 cursor를 생략하고 다음 페이지는 실제 응답의 `meta.page.next_cursor`를 사용한다.
+- 공통 cursor의 HMAC 서명·키 교체, limit 변경 허용, 경계 행 삭제 후 조회, 총 개수·스냅샷 일관성 미제공 정책을 그대로 적용한다. 로그 정렬은 실제 commit 순서를 보장하지 않는다.
+
+| 오류 코드 | HTTP | 메시지 |
+| --- | --- | --- |
+| `BRAND_CODE_DUPLICATE` | 409 | 이미 존재하는 브랜드 코드입니다. |
+| `DIMENSION_AUTO_CODE_DUPLICATE` | 409 | 기존 공통 카탈로그 메시지 |
+| `DIMENSION_AUTO_CODE_UNAVAILABLE` | 422 | 공통 메시지의 `{dimension}`에 `brand` 사용 |
+
+그 밖의 검증·없는 대상·cursor·내부 오류는 기존 공통 카탈로그를 따른다. 알려진 Brand 코드 UNIQUE 위반만 중복으로 변환한다. Brand 오류는 카탈로그·OpenAPI 예제·테스트에 함께 반영했다.
+
 ## Cursor 페이지네이션
 
 - 선택적 `cursor`와 `limit`을 받는다. 기본 `limit=20`, 범위 1~100이고 범위를 벗어나면 422다.
@@ -131,15 +175,17 @@ Company·Model·Country 구현에 사용하는 계약을 확정했다. 인증·�
 | `CONFLICT` | 409 | 현재 상태에서는 요청을 처리할 수 없습니다. |
 | `INTERNAL_ERROR` | 500 | 요청 처리 중 오류가 발생했습니다. |
 | `MODEL_CODE_DUPLICATE` | 409 | 이미 존재하는 모델 코드입니다. |
+| `BRAND_CODE_DUPLICATE` | 409 | 이미 존재하는 브랜드 코드입니다. |
 | `COMPANY_CODE_DUPLICATE` | 409 | 이미 존재하는 회사 코드입니다. |
 | `DIMENSION_AUTO_CODE_DUPLICATE` | 409 | 자동 생성된 코드가 이미 존재합니다. 코드를 직접 입력해 주세요. |
 | `DIMENSION_AUTO_CODE_UNAVAILABLE` | 422 | {dimension}에서 코드를 자동으로 생성할 수 없습니다. 코드를 직접 입력해 주세요. |
 
-Company는 `{dimension}`에 `company`, Model은 `model`을 사용한다. 자동 생성 실패의 기존 합의 메시지를 유지했다. 도메인 오류는 application 오류로 변환한 뒤 presentation에서 HTTP로 매핑한다. 각 차원의 알려진 코드 UNIQUE 위반만 코드 중복으로 취급하고 예상하지 못한 DB 오류는 INTERNAL_ERROR로 처리한다.
+Company는 `{dimension}`에 `company`, Model은 `model`, Brand는 `brand`를 사용한다. 자동 생성 실패의 기존 합의 메시지를 유지했다. 도메인 오류는 application 오류로 변환한 뒤 presentation에서 HTTP로 매핑한다. 각 차원의 알려진 코드 UNIQUE 위반만 코드 중복으로 취급하고 예상하지 못한 DB 오류는 INTERNAL_ERROR로 처리한다.
 
 ## 구현·변경 절차
 
 - Scalar `/docs`에서 이름 있는 요청·응답·경로·쿼리 예제를 선택할 수 있다. 각 예제의 예상 상태·사전 조건과 문서 상단 Introduction의 HTTP 테스트 순서를 따른다. 고정 UUID는 설명용이고, 정상 cursor는 실제 응답의 `meta.page.next_cursor`에서 복사한다. 첫 페이지 기본 요청에는 cursor를 포함하지 않는다. cursor는 자동 입력되는 고정 예제 없이 파라미터 설명에 실패 입력의 수동 실행 방법을 안내한다.
+- Brand 예제 원본은 [Brand OpenAPI 예제](../src/mdm_demo/presentation/schemas/brand_examples.py)이며 [실행 테스트](../tests/api/test_brand_openapi_examples.py)로 검증한다.
 - Model 예제 원본은 [Model OpenAPI 예제](../src/mdm_demo/presentation/schemas/model_examples.py)이며 [실행 테스트](../tests/api/test_model_openapi_examples.py)로 성공·실패·경계값을 검증한다.
 - 예제 원본은 [OpenAPI 예제](../src/mdm_demo/presentation/schemas/examples.py)이며 공통 오류 메시지는 카탈로그를 참조한다. [예제 실행 테스트](../tests/api/test_openapi_examples.py)는 OpenAPI에서 꺼낸 실제 요청 예제를 실행하고 null·빈 객체 및 응답 형태 보존을 확인한다.
 

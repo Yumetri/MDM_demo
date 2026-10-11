@@ -5,7 +5,7 @@
 - 사용자와 목적: 개발자가 API 명세를 열람하고 Scalar UI에서 요청을 실행한다. 도구는 OpenAPI 스키마를 조회할 수 있다.
 - 처리 결과: 문서 UI의 HTML 또는 OpenAPI JSON을 제공한다.
 - 진입점: Scalar UI `GET /docs`, OpenAPI 스키마 `GET /openapi.json`.
-- API 계약: [API 규약](../../api-conventions.md)은 Company·Model·Country와 공통 응답·오류 계약을 관리한다. 각 기능의 구현 범위는 해당 기능 문서에서 확인한다.
+- API 계약: [API 규약](../../api-conventions.md)은 Company·Model·Brand·Country와 공통 응답·오류 계약을 관리한다. 각 기능의 구현 범위는 해당 기능 문서에서 확인한다.
 
 ## 업무 규칙과 제약
 

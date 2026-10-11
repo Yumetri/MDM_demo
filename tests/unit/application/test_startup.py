@@ -4,6 +4,8 @@ from unittest.mock import AsyncMock, Mock
 import pytest
 
 from mdm_demo.app import create_app
+from mdm_demo.application.use_cases.brand import BrandUseCases
+from mdm_demo.application.use_cases.brand_log import BrandLogUseCases
 from mdm_demo.application.use_cases.company import CompanyUseCases
 from mdm_demo.application.use_cases.company_log import CompanyLogUseCases
 from mdm_demo.application.use_cases.country import CountryUseCases
@@ -18,6 +20,8 @@ SERVICE_TYPES = {
     "country_service": CountryUseCases,
     "model_log_service": ModelLogUseCases,
     "country_log_service": CountryLogUseCases,
+    "brand_service": BrandUseCases,
+    "brand_log_service": BrandLogUseCases,
 }
 SERVICE_STATE_NAMES = (
     "company_use_cases",
@@ -26,12 +30,18 @@ SERVICE_STATE_NAMES = (
     "country_use_cases",
     "model_log_use_cases",
     "country_log_use_cases",
+    "brand_use_cases",
+    "brand_log_use_cases",
 )
 
 
 @pytest.mark.parametrize(
     "provided",
-    [flags for flags in product((False, True), repeat=6) if any(flags) and not all(flags)],
+    [
+        flags
+        for flags in product((False, True), repeat=len(SERVICE_TYPES))
+        if any(flags) and not all(flags)
+    ],
 )
 def test_app_rejects_every_partial_service_combination(monkeypatch, provided):
     monkeypatch.delenv("CURSOR_SIGNING_KEY", raising=False)
@@ -42,7 +52,7 @@ def test_app_rejects_every_partial_service_combination(monkeypatch, provided):
         for (name, service_type), present in zip(SERVICE_TYPES.items(), provided, strict=True)
     }
 
-    with pytest.raises(ValueError, match="Provide all six services") as error:
+    with pytest.raises(ValueError, match="Provide all eight services") as error:
         create_app(**services)
 
     assert str(error.value).split("Missing: ")[1].split(", ") == [

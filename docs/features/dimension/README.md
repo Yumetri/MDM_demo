@@ -6,6 +6,8 @@
 - [CompanyLog](company-log.md)
 - [Model](model.md)
 - [ModelLog](model-log.md)
+- [Brand](brand.md)
+- [BrandLog](brand-log.md)
 - [Country](country.md)
 - [CountryLog](country-log.md)
 

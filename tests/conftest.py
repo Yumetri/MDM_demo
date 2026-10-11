@@ -7,12 +7,16 @@ from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, async_sessionmaker
 
 from mdm_demo.app import create_app
+from mdm_demo.application.use_cases.brand import BrandUseCases
+from mdm_demo.application.use_cases.brand_log import BrandLogUseCases
 from mdm_demo.application.use_cases.company import CompanyUseCases
 from mdm_demo.application.use_cases.company_log import CompanyLogUseCases
 from mdm_demo.application.use_cases.country import CountryUseCases
 from mdm_demo.application.use_cases.country_log import CountryLogUseCases
 from mdm_demo.application.use_cases.model import ModelUseCases
 from mdm_demo.application.use_cases.model_log import ModelLogUseCases
+from mdm_demo.infrastructure.pagination.brand_cursor import SignedBrandCursor
+from mdm_demo.infrastructure.pagination.brand_log_cursor import SignedBrandLogCursor
 from mdm_demo.infrastructure.pagination.company_cursor import SignedCompanyCursor
 from mdm_demo.infrastructure.pagination.company_log_cursor import SignedCompanyLogCursor
 from mdm_demo.infrastructure.pagination.country_cursor import SignedCountryCursor
@@ -32,7 +36,8 @@ async def database() -> AsyncIterator[tuple[AsyncEngine, async_sessionmaker[Asyn
         async with engine.begin() as connection:
             await connection.execute(
                 text(
-                    "TRUNCATE companies, company_logs, models, model_logs, countries, country_logs"
+                    "TRUNCATE companies, company_logs, models, model_logs, "
+                    "countries, country_logs, brands, brand_logs"
                 )
             )
         yield engine, factory
@@ -101,11 +106,45 @@ async def country_log_service(database) -> CountryLogUseCases:
 
 
 @pytest.fixture
+def brand_cursor_codec() -> SignedBrandCursor:
+    return SignedBrandCursor("test-only-signing-key-with-at-least-32-bytes")
+
+
+@pytest.fixture
+async def brand_service(database, brand_cursor_codec) -> BrandUseCases:
+    _, factory = database
+    return BrandUseCases(lambda: SqlAlchemyUnitOfWork(factory), brand_cursor_codec)
+
+
+@pytest.fixture
+async def brand_log_service(database) -> BrandLogUseCases:
+    _, factory = database
+    return BrandLogUseCases(
+        lambda: SqlAlchemyUnitOfWork(factory),
+        SignedBrandLogCursor("test-only-signing-key-with-at-least-32-bytes"),
+    )
+
+
+@pytest.fixture
 async def client(
-    service, log_service, model_service, model_log_service, country_service, country_log_service
+    service,
+    log_service,
+    model_service,
+    model_log_service,
+    country_service,
+    country_log_service,
+    brand_service,
+    brand_log_service,
 ) -> AsyncIterator[AsyncClient]:
     app = create_app(
-        service, log_service, model_service, model_log_service, country_service, country_log_service
+        service=service,
+        log_service=log_service,
+        model_service=model_service,
+        model_log_service=model_log_service,
+        brand_service=brand_service,
+        brand_log_service=brand_log_service,
+        country_service=country_service,
+        country_log_service=country_log_service,
     )
     async with app.router.lifespan_context(app):
         async with AsyncClient(

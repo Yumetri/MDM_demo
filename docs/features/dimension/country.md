@@ -56,7 +56,7 @@ Country는 상위 이슈의 코드 선택 입력·자동 생성 원칙에 대한
 - 이력은 전용 `country_logs`에 기존 ModelLog와 같은 구조로 저장한다. 세부 사항은 [CountryLog](country-log.md)를 따른다.
 - 수정·삭제는 기존 Company·Model처럼 SELECT FOR UPDATE로 직렬 처리한다. 별도 버전 검사로 오래된 화면의 수정 요청을 거부하지 않는다.
 - 동시 생성·이름 수정의 중복은 DB UNIQUE 제약으로 차단하며, 실패한 변경과 로그는 함께 rollback한다.
-- 초기 데이터를 자동 삽입하지 않는다. `countries`는 UUID v4, name, code, UTC 생성·수정 시각을 저장한다. [마이그레이션](../../../migrations/versions/0004_country_dimension.py)은 기존 `0003` 다음에 `0004_country`를 적용한다.
+- 초기 데이터를 자동 삽입하지 않는다. `countries`는 UUID v4, name, code, UTC 생성·수정 시각을 저장한다. [마이그레이션](../../../migrations/versions/0004_country_dimension.py)은 기존 `0003` 다음에 `0004_country`를 적용한다. [병합 리비전](../../../migrations/versions/0005_merge_brand_country.py)은 Brand의 `0004`와 Country의 `0004_country`를 하나의 head로 연결하며 기존 리비전은 유지한다.
 
 ## 조회와 인덱스
 
@@ -81,11 +81,12 @@ Country·CountryLog 조회에는 캐시를 적용하지 않는다. PostgreSQL에
 - [도메인 테스트](../../../tests/unit/domain/test_country.py): 대문자·NFC, 정규화 후 길이, NUL/surrogate, 코드 형식·불변성, no-op·스냅샷.
 - [유스케이스 테스트](../../../tests/unit/application/test_country.py): 생성·수정 중복 오류 변환, 동일 값 수정의 commit·로그 생략.
 - [PostgreSQL 통합 테스트](../../../tests/integration/persistence/test_country.py): Mapper 왕복, 동시 이름·코드 중복, 행 잠금, 서로 다른 행의 같은 이름 수정, rollback·취소·commit 실패·로그 불변성.
+- [병합 마이그레이션 테스트](../../../tests/integration/persistence/test_dimension_merge_migration.py): Brand만·Country만·양쪽 리비전 및 기존 공통 스키마에서 단일 head로 업그레이드하고 기존 데이터·이력을 보존한다. 병합 리비전만 되돌린 뒤 재적용하는 경로도 검사한다.
 - [마이그레이션 테스트](../../../tests/integration/persistence/test_country_migration.py): upgrade/downgrade, Company·Model 데이터 보존, ORM 일치 검사.
 - [API 테스트](../../../tests/api/test_country.py)·[OpenAPI 예제 실행](../../../tests/api/test_country_openapi_examples.py): CRUD·재사용·중복·검증 오류·cursor 경계와 응답 계약.
 - 실제 Scalar 브라우저에서 예제 선택, 생성·수정·삭제·이력 조회, 중복·입력 오류, no-op, 실제 cursor 다음 페이지와 오류를 확인했다. 첫 페이지 생성 코드와 실제 요청에서 cursor 생략을 확인했다.
 
-검사 진입점은 [Makefile](../../../Makefile), 실행 전제는 [README](../../../README.md)를 따른다. Company·Model 회귀를 포함한 전체 테스트를 실행하며, 아직 main에 없는 Brand 구현은 검증 범위에 포함하지 않는다. 새 의존성·초기 데이터는 추가하지 않았다.
+검사 진입점은 [Makefile](../../../Makefile), 실행 전제는 [README](../../../README.md)를 따른다. Company·Model·Brand 회귀를 포함한 전체 테스트를 실행한다. 새 의존성·초기 데이터는 추가하지 않았다.
 
 ## 관련 기능
 
