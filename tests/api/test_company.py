@@ -153,8 +153,10 @@ async def test_missing_invalid_id_and_framework_errors(client):
         assert_request_id(response)
 
 
-async def test_unexpected_error_sanitized_and_http_headers_preserved(service):
-    app = create_app(service)
+async def test_unexpected_error_sanitized_and_http_headers_preserved(
+    service, log_service, model_service, model_log_service
+):
+    app = create_app(service, log_service, model_service, model_log_service)
 
     @app.get("/test-error")
     async def failure():

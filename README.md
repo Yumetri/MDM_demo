@@ -82,3 +82,11 @@ PostgreSQL은 볼륨에 데이터를 보존하며, 기존 볼륨의 DB 계정·�
 기능맵에는 구현 전 합의한 업무 규칙도 포함하며, 해당 문서에 구현 전 요구사항임을 표시한다.
 
 Model은 Company와 독립된 제품 모델 차원입니다. 입력 규칙·이력 정책은 [Model](docs/features/dimension/model.md)과 [ModelLog](docs/features/dimension/model-log.md), HTTP 계약은 기존 [API 규약](docs/api-conventions.md)을 따릅니다.
+
+## 프로젝트 스킬
+
+[explain-diff-html](.agents/skills/explain-diff-html/SKILL.md)은 코드 변경·브랜치·커밋 기록을 배경, 핵심 예시, 코드 흐름, 대화형 퀴즈로 설명하는 프로젝트 스킬이다. 이 저장소의 Codex 대화에서 `$explain-diff-html main의 커밋 기록을 처음 보는 사람에게 설명해 줘`처럼 요청한다. 설치 후 다음 턴부터 사용할 수 있다.
+
+기본 독자는 주니어 백엔드 개발자다. Cursor 기반 페이지네이션·UoW·트랜잭션처럼 적합한 기술 용어를 제목과 본문에 사용하고, 처음 등장할 때 정의·구현 코드·구체적인 예시를 연결해 설명한다.
+
+[Geoffrey Litt의 Gist](https://gist.github.com/geoffreylitt/a29df1b5f9865506e8952488eac3d524)의 HTML 버전을 바탕으로, 관계·상태 변화·데이터 흐름을 실제 도식으로 보여 주도록 보강했다. 탭이나 버튼으로 설명 문구만 교체하는 UI는 시각화를 대신하지 않는다. 원본 기준 리비전은 `126e7fe9eecaafadfe1ac8bb183d135812b608f2`이며 Notion 버전은 포함하지 않는다. 결과물은 CSS·JavaScript를 포함한 단일 HTML로, 저장소 밖에 `YYYY-MM-DD-`로 시작하는 파일명으로 저장한다.

@@ -139,7 +139,9 @@ async def rename_company(
     },
 )
 async def delete_company(
-    company_id: CompanyID, service: CompanyService, request_id: RequestID
+    company_id: Annotated[UUID, Path(openapi_examples=id_examples("company", success_status=204))],
+    service: CompanyService,
+    request_id: RequestID,
 ) -> Response:
     await service.delete(company_id, request_id)
     return Response(status_code=204)
