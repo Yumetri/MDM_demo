@@ -1,7 +1,7 @@
 """Reject duplicate HTTP matchers and collisions with app-owned endpoints."""
 
 import re
-from collections.abc import Collection, Sequence
+from collections.abc import Sequence
 from itertools import count
 
 from fastapi.routing import iter_route_contexts
@@ -30,14 +30,8 @@ def _overlapping_methods(left: _Methods, right: _Methods) -> _Methods:
     return left & right
 
 
-def validate_http_routes(routes: Sequence[BaseRoute], *, reserved_paths: Collection[str]) -> None:
-    """Compare identical matchers, not arbitrary regex intersections.
-
-    Parameter names do not affect matching; converter regexes do. Additionally,
-    reject any HTTP matcher that consumes an app-owned concrete URL using the
-    same method, regardless of registration order or schema visibility.
-    """
-    http_routes: list[tuple[str, _Methods]] = []
+def _http_routes(routes: Sequence[BaseRoute]) -> list[tuple[str, _Methods]]:
+    result: list[tuple[str, _Methods]] = []
     for context in iter_route_contexts(routes):
         if not isinstance(context.original_route, Route):
             continue
@@ -45,8 +39,22 @@ def validate_http_routes(routes: Sequence[BaseRoute], *, reserved_paths: Collect
         effective = getattr(context, "starlette_route", None) or context
         path = effective.path
         if path is not None:
-            http_routes.append((path, effective.methods or None))
-    reserved = [(path, methods) for path, methods in http_routes if path in reserved_paths]
+            result.append((path, effective.methods or None))
+    return result
+
+
+def validate_http_routes(
+    routes: Sequence[BaseRoute], *, reserved_routes: Sequence[BaseRoute]
+) -> None:
+    """Compare identical matchers, not arbitrary regex intersections.
+
+    Parameter names do not affect matching; converter regexes do. Additionally,
+    reject any HTTP matcher that consumes an app-owned concrete URL using the
+    same method, regardless of registration order or schema visibility. Reserved
+    operations come only from app-owned routes supplied by the composition root.
+    """
+    http_routes = _http_routes(routes)
+    reserved = _http_routes(reserved_routes)
     operations: dict[str, list[tuple[str, _Methods]]] = {}
     for path, methods in http_routes:
         matcher = _matcher_key(path)

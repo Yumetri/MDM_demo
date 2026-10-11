@@ -191,3 +191,29 @@ async def test_unrestricted_routes_with_distinct_prefix_remain_usable(empty_meth
         for method in ["GET", "POST", "PROPFIND"]:
             assert (await client.request(method, "/extensions/example")).json() == {"raw": True}
         assert (await client.get("/items/example")).json() == {"ok": True}
+
+
+@pytest.mark.parametrize("path", ["/docs", "/openapi.json", "/health"])
+async def test_feature_post_routes_do_not_expand_reserved_methods(path):
+    literal = APIRouter()
+    fallback = APIRouter()
+
+    async def literal_response():
+        return {"handler": "literal"}
+
+    async def fallback_response(rest: str):
+        return {"handler": "fallback", "path": rest}
+
+    literal.add_api_route(path, literal_response, methods=["POST"])
+    fallback.add_api_route("/{rest:path}", fallback_response, methods=["POST"])
+    app = create_app(modules=(feature(literal, fallback),))
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        assert (await client.post(path)).json() == {"handler": "literal"}
+        assert (await client.post("/other/path")).json() == {
+            "handler": "fallback",
+            "path": "other/path",
+        }
+        assert "text/html" in (await client.get("/docs")).headers["content-type"]
+        assert "openapi" in (await client.get("/openapi.json")).json()
+        assert (await client.head("/openapi.json")).status_code == 200
+        assert (await client.get("/health")).status_code == 204

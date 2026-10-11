@@ -67,10 +67,12 @@ def create_app(
     app.add_middleware(RequestContextMiddleware)
     register_exception_handlers(app)
     app.include_router(health_router)
+    reserved_routes = list(app.routes)
     for module in selected:
         for router in module.routers:
             app.include_router(router)
     register_openapi_examples(app)
+    scalar_start = len(app.routes)
     add_scalar_reference(
         app,
         route="/docs",
@@ -78,7 +80,8 @@ def create_app(
         agent=AgentScalarConfig(disabled=True),
         telemetry=False,
     )
-    validate_http_routes(app.routes, reserved_paths={"/docs", "/openapi.json", "/health"})
+    reserved_routes.extend(app.routes[scalar_start:])
+    validate_http_routes(app.routes, reserved_routes=reserved_routes)
     return app
 
 
