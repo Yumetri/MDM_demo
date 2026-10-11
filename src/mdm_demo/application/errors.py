@@ -15,3 +15,7 @@ class DuplicateCompanyCode(Exception):
 
 class DuplicateModelCode(Exception):
     """Persistence port signal for the named model code constraint only."""
+
+
+class DuplicateBrandCode(Exception):
+    """Persistence port signal for the named brand code constraint only."""

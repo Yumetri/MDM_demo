@@ -1,6 +1,8 @@
 from types import TracebackType
 from typing import Protocol, Self
 
+from mdm_demo.application.ports.repositories.brand_log_repository import BrandLogRepository
+from mdm_demo.application.ports.repositories.brand_repository import BrandRepository
 from mdm_demo.application.ports.repositories.company_log_repository import CompanyLogRepository
 from mdm_demo.application.ports.repositories.company_repository import CompanyRepository
 from mdm_demo.application.ports.repositories.model_log_repository import ModelLogRepository
@@ -12,6 +14,8 @@ class UnitOfWork(Protocol):
     company_logs: CompanyLogRepository
     models: ModelRepository
     model_logs: ModelLogRepository
+    brands: BrandRepository
+    brand_logs: BrandLogRepository
 
     async def __aenter__(self) -> Self: ...
     async def __aexit__(
