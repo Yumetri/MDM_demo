@@ -3,7 +3,7 @@ from uuid import UUID, uuid4
 
 from mdm_demo.domain.entities.country import Country
 from mdm_demo.domain.entities.country_log import CountryLog
-from mdm_demo.infrastructure.persistence.unit_of_work import SqlAlchemyUnitOfWork
+from mdm_demo.infrastructure.persistence.units_of_work.country import SqlAlchemyCountryUnitOfWork
 
 
 async def test_history_survives_delete_and_code_reuse(client):
@@ -94,7 +94,7 @@ async def test_same_timestamp_log_pagination(client, database):
     country = Country.create("Same", "SMA")
     other = Country.create("Other", "OTH")
     now = datetime.now(UTC)
-    async with SqlAlchemyUnitOfWork(factory) as uow:
+    async with SqlAlchemyCountryUnitOfWork(factory) as uow:
         for index, target in [(3, country), (2, other), (1, country)]:
             await uow.country_logs.add(
                 CountryLog(

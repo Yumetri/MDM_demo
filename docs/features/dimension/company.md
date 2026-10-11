@@ -65,7 +65,7 @@ Company 조회에는 캐시를 적용하지 않는다. 모두 PostgreSQL에서 �
 | 도메인 | [Company](../../../src/mdm_demo/domain/entities/company.py), [이름](../../../src/mdm_demo/domain/value_objects/company_name.py), [코드](../../../src/mdm_demo/domain/value_objects/company_code.py) |
 | 유스케이스 | [CompanyUseCases](../../../src/mdm_demo/application/use_cases/company.py) |
 | DB·Mapper | [모델](../../../src/mdm_demo/infrastructure/persistence/models/company.py), [Repository](../../../src/mdm_demo/infrastructure/persistence/repositories/company_repository.py), [Mapper](../../../src/mdm_demo/infrastructure/persistence/mappers/company_mapper.py) |
-| 트랜잭션·스키마 | [UoW](../../../src/mdm_demo/infrastructure/persistence/unit_of_work.py), [초기 마이그레이션](../../../migrations/versions/0001_company_dimension.py), [로그 분리](../../../migrations/versions/0002_split_company_logs.py) |
+| 트랜잭션·스키마 | [UoW](../../../src/mdm_demo/infrastructure/persistence/units_of_work/company.py), [초기 마이그레이션](../../../migrations/versions/0001_company_dimension.py), [로그 분리](../../../migrations/versions/0002_split_company_logs.py) |
 | HTTP | [라우터](../../../src/mdm_demo/presentation/routers/company.py), [스키마](../../../src/mdm_demo/presentation/schemas/company.py) |
 | 단위 테스트 | [도메인](../../../tests/unit/domain/test_company.py), [유스케이스](../../../tests/unit/application/test_company.py), [cursor](../../../tests/unit/application/test_cursor.py) |
 | 실제 PostgreSQL 검증 | [영속성·원자성·동시성](../../../tests/integration/persistence/test_company.py), [API 계약](../../../tests/api/test_company.py) |
@@ -77,3 +77,5 @@ Company 조회에는 캐시를 적용하지 않는다. 모두 PostgreSQL에서 �
 - [CompanyLog](company-log.md): 변경과 함께 커밋하는 이력.
 - 다른 차원과의 구체적인 참조 관계는 미정이다. 향후 참조가 추가되면 참조 중 삭제 제한을 해당 기능과 함께 설계한다.
 - [Dimension 목차](README.md)
+
+트랜잭션 조립은 [Company UoW](../../../src/mdm_demo/infrastructure/persistence/units_of_work/company.py)를 사용한다. 차원과 로그 저장소는 같은 세션을 공유하고, 세션 정리·commit·rollback은 [공통 구현](../../../src/mdm_demo/infrastructure/persistence/unit_of_work.py)에서 처리한다.

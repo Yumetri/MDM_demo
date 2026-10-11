@@ -88,3 +88,5 @@
 - [ModelLog](model-log.md): Model 변경과 함께 저장하는 이력.
 - [Company](company.md): 독립 차원이며 Model과 직접 참조하지 않는다.
 - [Dimension 목차](README.md)
+
+트랜잭션 조립은 [Model UoW](../../../src/mdm_demo/infrastructure/persistence/units_of_work/model.py)를 사용한다. 차원과 로그 저장소는 같은 세션을 공유하고, 세션 정리·commit·rollback은 [공통 구현](../../../src/mdm_demo/infrastructure/persistence/unit_of_work.py)에서 처리한다.

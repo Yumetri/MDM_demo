@@ -6,7 +6,7 @@ from mdm_demo.application.dto.country import CountryDTO, CountryPage
 from mdm_demo.application.errors import ApplicationError
 from mdm_demo.application.errors.country import DuplicateCountryCode, DuplicateCountryName
 from mdm_demo.application.ports.cursors.country import CountryBoundary, CountryCursor
-from mdm_demo.application.ports.unit_of_work import UnitOfWork
+from mdm_demo.application.ports.units_of_work.country import CountryUnitOfWork
 from mdm_demo.domain.entities.country import Country
 from mdm_demo.domain.entities.country_log import CountryLog
 from mdm_demo.domain.errors.country import InvalidCountryValue
@@ -25,7 +25,7 @@ def translate_domain_errors() -> Generator[None]:
 
 
 class CountryUseCases:
-    def __init__(self, uow_factory: Callable[[], UnitOfWork], cursor: CountryCursor) -> None:
+    def __init__(self, uow_factory: Callable[[], CountryUnitOfWork], cursor: CountryCursor) -> None:
         self._uow_factory = uow_factory
         self._cursor = cursor
 

@@ -64,3 +64,5 @@
 - [Country](country.md): 이력과 함께 저장하는 독립 국가 차원.
 - [ModelLog](model-log.md): 합의한 로그 구조의 기존 구현 근거.
 - [Dimension 목차](README.md)
+
+트랜잭션 조립은 [Country UoW](../../../src/mdm_demo/infrastructure/persistence/units_of_work/country.py)를 사용한다. 차원과 로그 저장소는 같은 세션을 공유하고, 세션 정리·commit·rollback은 [공통 구현](../../../src/mdm_demo/infrastructure/persistence/unit_of_work.py)에서 처리한다.

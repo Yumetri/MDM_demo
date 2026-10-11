@@ -25,7 +25,10 @@ from mdm_demo.infrastructure.pagination.country_log_cursor import SignedCountryL
 from mdm_demo.infrastructure.pagination.model_cursor import SignedModelCursor
 from mdm_demo.infrastructure.pagination.model_log_cursor import SignedModelLogCursor
 from mdm_demo.infrastructure.persistence.session import create_session_factory, database_url
-from mdm_demo.infrastructure.persistence.unit_of_work import SqlAlchemyUnitOfWork
+from mdm_demo.infrastructure.persistence.units_of_work.brand import SqlAlchemyBrandUnitOfWork
+from mdm_demo.infrastructure.persistence.units_of_work.company import SqlAlchemyCompanyUnitOfWork
+from mdm_demo.infrastructure.persistence.units_of_work.country import SqlAlchemyCountryUnitOfWork
+from mdm_demo.infrastructure.persistence.units_of_work.model import SqlAlchemyModelUnitOfWork
 from mdm_demo.presentation.exception_handlers import register_exception_handlers
 from mdm_demo.presentation.openapi import register_openapi_examples
 from mdm_demo.presentation.request_context import RequestContextMiddleware
@@ -83,33 +86,35 @@ def create_app(
             return
         cursor = SignedCompanyCursor(os.environ["CURSOR_SIGNING_KEY"])
         engine, factory = create_session_factory(database_url())
-        app.state.company_use_cases = CompanyUseCases(lambda: SqlAlchemyUnitOfWork(factory), cursor)
+        app.state.company_use_cases = CompanyUseCases(
+            lambda: SqlAlchemyCompanyUnitOfWork(factory), cursor
+        )
         app.state.company_log_use_cases = CompanyLogUseCases(
-            lambda: SqlAlchemyUnitOfWork(factory),
+            lambda: SqlAlchemyCompanyUnitOfWork(factory),
             SignedCompanyLogCursor(os.environ["CURSOR_SIGNING_KEY"]),
         )
         app.state.model_use_cases = ModelUseCases(
-            lambda: SqlAlchemyUnitOfWork(factory),
+            lambda: SqlAlchemyModelUnitOfWork(factory),
             SignedModelCursor(os.environ["CURSOR_SIGNING_KEY"]),
         )
         app.state.model_log_use_cases = ModelLogUseCases(
-            lambda: SqlAlchemyUnitOfWork(factory),
+            lambda: SqlAlchemyModelUnitOfWork(factory),
             SignedModelLogCursor(os.environ["CURSOR_SIGNING_KEY"]),
         )
         app.state.country_use_cases = CountryUseCases(
-            lambda: SqlAlchemyUnitOfWork(factory),
+            lambda: SqlAlchemyCountryUnitOfWork(factory),
             SignedCountryCursor(os.environ["CURSOR_SIGNING_KEY"]),
         )
         app.state.country_log_use_cases = CountryLogUseCases(
-            lambda: SqlAlchemyUnitOfWork(factory),
+            lambda: SqlAlchemyCountryUnitOfWork(factory),
             SignedCountryLogCursor(os.environ["CURSOR_SIGNING_KEY"]),
         )
         app.state.brand_use_cases = BrandUseCases(
-            lambda: SqlAlchemyUnitOfWork(factory),
+            lambda: SqlAlchemyBrandUnitOfWork(factory),
             SignedBrandCursor(os.environ["CURSOR_SIGNING_KEY"]),
         )
         app.state.brand_log_use_cases = BrandLogUseCases(
-            lambda: SqlAlchemyUnitOfWork(factory),
+            lambda: SqlAlchemyBrandUnitOfWork(factory),
             SignedBrandLogCursor(os.environ["CURSOR_SIGNING_KEY"]),
         )
         try:

@@ -3,7 +3,7 @@ from uuid import UUID, uuid4
 
 from mdm_demo.domain.entities.brand import Brand
 from mdm_demo.domain.entities.brand_log import BrandLog
-from mdm_demo.infrastructure.persistence.unit_of_work import SqlAlchemyUnitOfWork
+from mdm_demo.infrastructure.persistence.units_of_work.brand import SqlAlchemyBrandUnitOfWork
 
 
 async def test_history_survives_delete_and_code_reuse(client):
@@ -94,7 +94,7 @@ async def test_same_timestamp_log_pagination(client, database):
     brand = Brand.create("Same", "SMA")
     other = Brand.create("Other", "OTH")
     now = datetime.now(UTC)
-    async with SqlAlchemyUnitOfWork(factory) as uow:
+    async with SqlAlchemyBrandUnitOfWork(factory) as uow:
         for index, target in [(3, brand), (2, other), (1, brand)]:
             await uow.brand_logs.add(
                 BrandLog(

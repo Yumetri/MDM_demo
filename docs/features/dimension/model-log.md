@@ -76,3 +76,5 @@ DB 관리자의 TRUNCATE·트리거 제거까지 차단하는 감사 보안 체�
 - [Model](model.md)
 - [CompanyLog](company-log.md)
 - [Dimension 목차](README.md)
+
+트랜잭션 조립은 [Model UoW](../../../src/mdm_demo/infrastructure/persistence/units_of_work/model.py)를 사용한다. 차원과 로그 저장소는 같은 세션을 공유하고, 세션 정리·commit·rollback은 [공통 구현](../../../src/mdm_demo/infrastructure/persistence/unit_of_work.py)에서 처리한다.
