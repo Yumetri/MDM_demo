@@ -8,7 +8,9 @@
 - [ModelLog](model-log.md)
 - [Brand](brand.md)
 - [BrandLog](brand-log.md)
+- [Country](country.md)
+- [CountryLog](country-log.md)
 
-Country·Category·Year·Network·Memory의 구체 규칙은 아직 합의하지 않았다. 공통 구현 원칙은 [이슈 #1](https://github.com/Yumetri/MDM_demo/issues/1)을 따른다.
+공통 구현 원칙은 [이슈 #1](https://github.com/Yumetri/MDM_demo/issues/1), 차원별 합의 사항과 미정 항목은 각 기능 문서를 따른다.
 
 [전체 기능맵](../README.md)

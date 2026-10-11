@@ -49,7 +49,7 @@
 - 변경과 로그는 같은 UoW·DB 트랜잭션에서 함께 commit/rollback한다. 로그 실패·commit 실패·취소 때에도 세션을 정리한다.
 - 동시 수정·삭제는 `SELECT … FOR UPDATE`로 직렬 처리한다. 나중에 처리된 수정이 최종 값이며 오래된 클라이언트 값을 별도로 거부하지 않는다.
 - 알려진 코드 UNIQUE 위반만 중복으로 변환한다. commit 응답 유실 시 결과 확정·자동 재시도는 제공하지 않는다.
-- [0004 마이그레이션](../../../migrations/versions/0004_brand_dimension.py)은 Brand 전용 테이블·인덱스·트리거만 추가한다. 기존 Company·Model 마이그레이션은 보존한다. 다운그레이드는 Brand 데이터·이력을 제거하므로 보존이 필요하면 먼저 백업해야 한다.
+- [0004 마이그레이션](../../../migrations/versions/0004_brand_dimension.py)은 Brand 전용 테이블·인덱스·트리거만 추가한다. 기존 Company·Model 마이그레이션은 보존한다. [병합 리비전](../../../migrations/versions/0005_merge_brand_country.py)은 Brand `0004`와 Country `0004_country`를 하나의 head로 연결한다. 다운그레이드는 Brand 데이터·이력을 제거하므로 보존이 필요하면 먼저 백업해야 한다.
 
 ## 조회와 인덱스
 

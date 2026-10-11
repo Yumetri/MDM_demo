@@ -1,8 +1,8 @@
 # MDM backend foundation
 
 uv 기반 비동기 FastAPI·SQLAlchemy 백엔드 프로젝트. PostgreSQL·Redis를 Docker Compose로 실행한다.
-실행 환경·헬스 체크·Scalar API 문서와 Company·Model·Brand CRUD·CompanyLog·ModelLog·BrandLog를 구현했다.
-Company·Model·Brand와 변경 이력 조회는 PostgreSQL을 사용하며 인증·권한·차원 캐시는 포함하지 않는다.
+실행 환경·헬스 체크·Scalar API 문서와 Company·Model·Brand·Country CRUD·CompanyLog·ModelLog·BrandLog·CountryLog를 구현했다.
+Company·Model·Brand·Country와 변경 이력 조회는 PostgreSQL을 사용하며 인증·권한·차원 캐시는 포함하지 않는다.
 
 ## 실행
 
@@ -20,7 +20,9 @@ Company CRUD는 `/companies`, Model CRUD는 `/models`에서 제공하며 구체�
 회사별 이력은 `/companies/{company_id}/logs`, 로그 단건은 `/company-logs/{log_id}`에서 조회한다. 삭제한 회사도 원래 UUID로 이력을 조회할 수 있다. Scalar에는 성공·실패·경계값 예제와 실행 순서가 있으며, 생성 응답의 UUID와 목록 응답의 cursor를 복사해 테스트한다.
 모델별 이력은 `/models/{model_id}/logs`, 로그 단건은 `/model-logs/{log_id}`에서 동일하게 조회한다.
 Brand CRUD는 `/brands`, 이력 목록은 `/brands/{brand_id}/logs`, 로그 단건은 `/brand-logs/{log_id}`에서 제공한다. Brand는 Company·Model과 독립된 차원이며 [Brand](docs/features/dimension/brand.md)·[BrandLog](docs/features/dimension/brand-log.md)의 규칙을 따른다.
+Country CRUD는 `/countries`, 국가별 이력은 `/countries/{country_id}/logs`, 로그 단건은 `/country-logs/{log_id}`에서 제공한다. Country는 국가명을 공백 제거·대문자·NFC 정규화 후 유일하게 저장하며, 영문 3자 코드를 직접 입력해야 한다. 자동 생성은 제공하지 않는다. 세부 규칙은 [Country](docs/features/dimension/country.md)·[CountryLog](docs/features/dimension/country-log.md)를 따른다.
 `make up`은 PostgreSQL 준비 → 일회성 `migrate` 서비스의 Alembic 적용 → API 시작 순서로 실행한다. 마이그레이션 실패 시 API 시작을 막는다.
+`0005_merge_brand_country`는 기존 Brand(`0004`)·Country(`0004_country`) 리비전을 하나의 head로 합친다. 어느 한쪽만 적용된 DB도 `make up`으로 빠진 차원을 추가하며 기존 데이터·이력을 보존한다.
 
 주소는 기본 포트 기준이다. 소스 변경 후 `make up`을 다시 실행하면 이미지를 재빌드한다.
 
@@ -45,6 +47,7 @@ PostgreSQL 포트는 로컬 루프백에만 공개한다. `.env`에서 DB 이름
 | --- | --- |
 | `make smoke` | 실행 중인 환경의 API·문서·DB·캐시 연결 확인. 브라우저 렌더링은 별도 확인 |
 | `make test-container` | 별도 PostgreSQL 테스트 서비스에서 마이그레이션·모델 일치 검사와 단위·통합·API 테스트 |
+| `make format` | 로컬 uv 환경에서 import 정렬·코드 포맷 적용 |
 | `make test-unit` | 로컬 uv 환경에서 DB 없는 단위 테스트 |
 | `make test-stop` | 테스트 PostgreSQL 종료, 임시 데이터 폐기 |
 | `make check-container` | 컨테이너에서 Ruff 린트·포맷 및 Pyrefly 타입 검사. 타입 진단은 경고부터 실패로 처리 |
@@ -62,7 +65,7 @@ PostgreSQL 포트는 로컬 루프백에만 공개한다. `.env`에서 DB 이름
 ## 설정
 
 포트나 DB 설정을 바꾸려면 [.env.example](.env.example)을 `.env`로 복사해 수정한다. 기본 자격증명은 로컬 개발 전용이다.
-PostgreSQL은 볼륨에 데이터를 보존하며, 기존 볼륨의 DB 계정·암호는 `.env` 수정만으로 바뀌지 않는다. Redis 캐시는 영속화하지 않는다. Company·Model·Brand 삭제는 물리 삭제지만 전용 `company_logs`·`model_logs`·`brand_logs`에 원본 UUID를 FK 없이 보존하며 이력은 자동 만료하지 않는다.
+PostgreSQL은 볼륨에 데이터를 보존하며, 기존 볼륨의 DB 계정·암호는 `.env` 수정만으로 바뀌지 않는다. Redis 캐시는 영속화하지 않는다. Company·Model·Brand·Country 삭제는 물리 삭제지만 전용 `company_logs`·`model_logs`·`brand_logs`·`country_logs`에 원본 UUID를 FK 없이 보존하며 이력은 자동 만료하지 않는다.
 `CURSOR_SIGNING_KEY`는 최소 32바이트이며 직접 앱을 실행할 때 반드시 설정한다. Compose에는 로컬 개발용 기본값이 있고 키 교체 시 기존 cursor는 무효화된다.
 
 | 파일 | 관리 대상 |
@@ -72,7 +75,7 @@ PostgreSQL은 볼륨에 데이터를 보존하며, 기존 볼륨의 DB 계정·�
 | [uv.lock](uv.lock) | 전체 Python 의존성 잠금 |
 | [Dockerfile](Dockerfile) | uv 버전·앱 이미지 구성 |
 | [compose.yaml](compose.yaml) | 서비스 설정·PostgreSQL 및 Redis 이미지 버전 |
-| [alembic.ini](alembic.ini), [초기 스키마](migrations/versions/0001_company_dimension.py)·[Company 로그 분리](migrations/versions/0002_split_company_logs.py)·[Model 추가](migrations/versions/0003_model_dimension.py)·[Brand 추가](migrations/versions/0004_brand_dimension.py) | DB 마이그레이션 설정·스키마 이력 |
+| [alembic.ini](alembic.ini), [초기 스키마](migrations/versions/0001_company_dimension.py)·[Company 로그 분리](migrations/versions/0002_split_company_logs.py)·[Model 추가](migrations/versions/0003_model_dimension.py)·[Brand 추가](migrations/versions/0004_brand_dimension.py)·[Country 추가](migrations/versions/0004_country_dimension.py)·[Brand·Country 병합](migrations/versions/0005_merge_brand_country.py) | DB 마이그레이션 설정·스키마 이력 |
 | [app.py](src/mdm_demo/app.py) | Scalar 번들 버전 |
 
 ## 관련 문서

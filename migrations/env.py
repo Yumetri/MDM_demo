@@ -10,6 +10,8 @@ from mdm_demo.infrastructure.persistence.models.brand import BrandModel  # noqa:
 from mdm_demo.infrastructure.persistence.models.brand_log import BrandLogModel  # noqa: F401
 from mdm_demo.infrastructure.persistence.models.company import CompanyModel  # noqa: F401
 from mdm_demo.infrastructure.persistence.models.company_log import CompanyLogModel  # noqa: F401
+from mdm_demo.infrastructure.persistence.models.country import CountryModel  # noqa: F401
+from mdm_demo.infrastructure.persistence.models.country_log import CountryLogModel  # noqa: F401
 from mdm_demo.infrastructure.persistence.models.model import ModelModel  # noqa: F401
 from mdm_demo.infrastructure.persistence.models.model_log import ModelLogModel  # noqa: F401
 from mdm_demo.infrastructure.persistence.session import database_url

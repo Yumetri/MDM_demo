@@ -20,6 +20,8 @@ ERRORS = {
     "METHOD_NOT_ALLOWED": ErrorSpec(405, "지원하지 않는 요청 방식입니다."),
     "CONFLICT": ErrorSpec(409, "현재 상태에서는 요청을 처리할 수 없습니다."),
     "INTERNAL_ERROR": ErrorSpec(500, "요청 처리 중 오류가 발생했습니다."),
+    "COUNTRY_NAME_DUPLICATE": ErrorSpec(409, "이미 존재하는 국가명입니다."),
+    "COUNTRY_CODE_DUPLICATE": ErrorSpec(409, "이미 존재하는 국가 코드입니다."),
     "BRAND_CODE_DUPLICATE": ErrorSpec(409, "이미 존재하는 브랜드 코드입니다."),
     "MODEL_CODE_DUPLICATE": ErrorSpec(409, "이미 존재하는 모델 코드입니다."),
     "COMPANY_CODE_DUPLICATE": ErrorSpec(409, "이미 존재하는 회사 코드입니다."),

@@ -12,12 +12,16 @@ from mdm_demo.application.use_cases.brand import BrandUseCases
 from mdm_demo.application.use_cases.brand_log import BrandLogUseCases
 from mdm_demo.application.use_cases.company import CompanyUseCases
 from mdm_demo.application.use_cases.company_log import CompanyLogUseCases
+from mdm_demo.application.use_cases.country import CountryUseCases
+from mdm_demo.application.use_cases.country_log import CountryLogUseCases
 from mdm_demo.application.use_cases.model import ModelUseCases
 from mdm_demo.application.use_cases.model_log import ModelLogUseCases
 from mdm_demo.infrastructure.pagination.brand_cursor import SignedBrandCursor
 from mdm_demo.infrastructure.pagination.brand_log_cursor import SignedBrandLogCursor
 from mdm_demo.infrastructure.pagination.company_cursor import SignedCompanyCursor
 from mdm_demo.infrastructure.pagination.company_log_cursor import SignedCompanyLogCursor
+from mdm_demo.infrastructure.pagination.country_cursor import SignedCountryCursor
+from mdm_demo.infrastructure.pagination.country_log_cursor import SignedCountryLogCursor
 from mdm_demo.infrastructure.pagination.model_cursor import SignedModelCursor
 from mdm_demo.infrastructure.pagination.model_log_cursor import SignedModelLogCursor
 from mdm_demo.infrastructure.persistence.session import create_session_factory, database_url
@@ -29,6 +33,8 @@ from mdm_demo.presentation.routers.brand import router as brand_router
 from mdm_demo.presentation.routers.brand_log import router as brand_log_router
 from mdm_demo.presentation.routers.company import router as company_router
 from mdm_demo.presentation.routers.company_log import router as company_log_router
+from mdm_demo.presentation.routers.country import router as country_router
+from mdm_demo.presentation.routers.country_log import router as country_log_router
 from mdm_demo.presentation.routers.health import router as health_router
 from mdm_demo.presentation.routers.model import router as model_router
 from mdm_demo.presentation.routers.model_log import router as model_log_router
@@ -42,20 +48,24 @@ def create_app(
     model_log_service: ModelLogUseCases | None = None,
     brand_service: BrandUseCases | None = None,
     brand_log_service: BrandLogUseCases | None = None,
+    country_service: CountryUseCases | None = None,
+    country_log_service: CountryLogUseCases | None = None,
 ) -> FastAPI:
     """Build default services, or use a complete set of caller-provided services."""
     services = {
         "service": service,
         "log_service": log_service,
         "model_service": model_service,
+        "country_service": country_service,
         "model_log_service": model_log_service,
+        "country_log_service": country_log_service,
         "brand_service": brand_service,
         "brand_log_service": brand_log_service,
     }
     missing = [name for name, value in services.items() if value is None]
     if missing and len(missing) != len(services):
         raise ValueError(
-            "Provide all six services or omit all of them. Missing: " + ", ".join(missing)
+            "Provide all eight services or omit all of them. Missing: " + ", ".join(missing)
         )
 
     @asynccontextmanager
@@ -64,7 +74,9 @@ def create_app(
             app.state.company_use_cases = service
             app.state.company_log_use_cases = log_service
             app.state.model_use_cases = model_service
+            app.state.country_use_cases = country_service
             app.state.model_log_use_cases = model_log_service
+            app.state.country_log_use_cases = country_log_service
             app.state.brand_use_cases = brand_service
             app.state.brand_log_use_cases = brand_log_service
             yield
@@ -83,6 +95,14 @@ def create_app(
         app.state.model_log_use_cases = ModelLogUseCases(
             lambda: SqlAlchemyUnitOfWork(factory),
             SignedModelLogCursor(os.environ["CURSOR_SIGNING_KEY"]),
+        )
+        app.state.country_use_cases = CountryUseCases(
+            lambda: SqlAlchemyUnitOfWork(factory),
+            SignedCountryCursor(os.environ["CURSOR_SIGNING_KEY"]),
+        )
+        app.state.country_log_use_cases = CountryLogUseCases(
+            lambda: SqlAlchemyUnitOfWork(factory),
+            SignedCountryLogCursor(os.environ["CURSOR_SIGNING_KEY"]),
         )
         app.state.brand_use_cases = BrandUseCases(
             lambda: SqlAlchemyUnitOfWork(factory),
@@ -111,7 +131,9 @@ def create_app(
     app.include_router(company_router)
     app.include_router(company_log_router)
     app.include_router(model_router)
+    app.include_router(country_router)
     app.include_router(model_log_router)
+    app.include_router(country_log_router)
     app.include_router(brand_router)
     app.include_router(brand_log_router)
     register_openapi_examples(app)

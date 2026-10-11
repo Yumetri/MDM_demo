@@ -241,12 +241,15 @@ def responses(
             in {
                 "COMPANY_CODE_DUPLICATE",
                 "MODEL_CODE_DUPLICATE",
+                "COUNTRY_CODE_DUPLICATE",
                 "BRAND_CODE_DUPLICATE",
                 "DIMENSION_AUTO_CODE_DUPLICATE",
                 "DIMENSION_AUTO_CODE_UNAVAILABLE",
             }
             else None
         )
+        if code == "COUNTRY_NAME_DUPLICATE":
+            field = "body.name"
         response["content"]["application/json"]["examples"][code] = error_example(
             code, field, dimension=dimension
         )
@@ -321,9 +324,22 @@ Model 자동 생성 예제는 Galaxy S24 → GAL입니다.
 직접 코드는 양끝 공백을 제거하고 영문·숫자 3자를 대문자로 변환합니다.
 """
 
+
 WORKFLOW += """
 Brand도 같은 순서로 `/brands`, `/brands/{brand_id}/logs`, `/brand-logs/{log_id}`에서 실행합니다.
 Brand 자동 생성 예제는 Galaxy → GAL이며, Company·Model과 독립적으로 관리합니다.
 직접 코드는 양끝 공백 제거 후 영문·숫자 3자를 대문자로 저장합니다.
 이름을 변경해도 코드는 유지하며 동일한 이름 수정은 이력을 추가하지 않습니다.
+"""
+
+
+WORKFLOW += """
+
+### Country 테스트 준비
+Country는 자동 코드 생성이 없습니다. POST /countries에서 name과 code를 함께 입력하세요.
+이름은 양끝 공백 제거·대문자·NFC 정규화 후 저장하며 이름과 코드는 각각 중복 불가입니다.
+manual_code 예제로 KOREA/KOR을 생성하고 data.id를 후속 요청 경로에 복사하세요.
+수정 중복 예제는 JAPAN/JPN을 별도로 생성한 뒤 KOREA의 UUID에서 실행합니다.
+공통 CRUD·이력·cursor 테스트 순서는 위 안내를 따릅니다.
+성공 예제를 재실행할 때는 해당 이름과 코드의 이전 항목을 삭제하세요. 삭제 후 로그는 유지됩니다.
 """

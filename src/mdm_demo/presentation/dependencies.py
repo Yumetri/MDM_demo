@@ -7,6 +7,8 @@ from mdm_demo.application.use_cases.brand import BrandUseCases
 from mdm_demo.application.use_cases.brand_log import BrandLogUseCases
 from mdm_demo.application.use_cases.company import CompanyUseCases
 from mdm_demo.application.use_cases.company_log import CompanyLogUseCases
+from mdm_demo.application.use_cases.country import CountryUseCases
+from mdm_demo.application.use_cases.country_log import CountryLogUseCases
 from mdm_demo.application.use_cases.model import ModelUseCases
 from mdm_demo.application.use_cases.model_log import ModelLogUseCases
 
@@ -42,6 +44,20 @@ def model_log_use_cases(request: Request) -> ModelLogUseCases:
 
 
 ModelLogService = Annotated[ModelLogUseCases, Depends(model_log_use_cases)]
+
+
+def country_use_cases(request: Request) -> CountryUseCases:
+    return cast(CountryUseCases, request.app.state.country_use_cases)
+
+
+CountryService = Annotated[CountryUseCases, Depends(country_use_cases)]
+
+
+def country_log_use_cases(request: Request) -> CountryLogUseCases:
+    return cast(CountryLogUseCases, request.app.state.country_log_use_cases)
+
+
+CountryLogService = Annotated[CountryLogUseCases, Depends(country_log_use_cases)]
 
 
 def brand_use_cases(request: Request) -> BrandUseCases:
