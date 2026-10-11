@@ -2,7 +2,8 @@
 
 
 class ApplicationError(Exception):
-    def __init__(self, code: str, field: str | None = None) -> None:
+    def __init__(self, code: str, field: str | None = None, *, dimension: str = "company") -> None:
+        self.dimension = dimension
         self.code = code
         self.field = field
         super().__init__(code)
@@ -10,3 +11,7 @@ class ApplicationError(Exception):
 
 class DuplicateCompanyCode(Exception):
     """Persistence port signal for the named company code constraint only."""
+
+
+class DuplicateModelCode(Exception):
+    """Persistence port signal for the named model code constraint only."""

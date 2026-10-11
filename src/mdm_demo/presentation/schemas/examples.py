@@ -2,7 +2,7 @@
 
 from typing import Any
 
-from mdm_demo.presentation.error_catalog import DETAIL_MESSAGES, ERRORS
+from mdm_demo.presentation.error_catalog import DETAIL_MESSAGES, ERRORS, error_message
 from mdm_demo.presentation.schemas.common import ErrorResponse
 
 COMPANY_ID = "11111111-1111-4111-8111-111111111111"
@@ -194,18 +194,22 @@ CURSOR_DESCRIPTION = (
 
 
 def error_example(
-    code: str, field: str | None = None, *, detail_code: str | None = None
+    code: str,
+    field: str | None = None,
+    *,
+    detail_code: str | None = None,
+    dimension: str = "company",
 ) -> dict[str, Any]:
     spec = ERRORS[code]
     details = []
     if field:
         selected = detail_code or code
-        message = DETAIL_MESSAGES[selected] if detail_code else spec.message
+        message = DETAIL_MESSAGES[selected] if detail_code else error_message(code, dimension)
         details = [{"field": field, "code": selected, "message": message}]
     return example(
         f"{spec.status} · {code}",
         {
-            "error": {"code": code, "message": spec.message, "details": details},
+            "error": {"code": code, "message": error_message(code, dimension), "details": details},
             "meta": META,
         },
     )
@@ -218,6 +222,7 @@ def responses(
     errors: tuple[str, ...] = (),
     validation_field: str = "body.name",
     page: bool = False,
+    dimension: str = "company",
 ) -> dict[int | str, dict[str, Any]]:
     result: dict[int | str, dict[str, Any]] = {}
     if success is not None:
@@ -232,12 +237,15 @@ def responses(
             if code
             in {
                 "COMPANY_CODE_DUPLICATE",
+                "MODEL_CODE_DUPLICATE",
                 "DIMENSION_AUTO_CODE_DUPLICATE",
                 "DIMENSION_AUTO_CODE_UNAVAILABLE",
             }
             else None
         )
-        response["content"]["application/json"]["examples"][code] = error_example(code, field)
+        response["content"]["application/json"]["examples"][code] = error_example(
+            code, field, dimension=dimension
+        )
     if "VALIDATION_ERROR" in errors:
         examples = result[422]["content"]["application/json"]["examples"]
         examples["VALIDATION_ERROR"] = error_example(
@@ -301,4 +309,10 @@ WORKFLOW = """### HTTP 테스트 순서
 
 고정 응답 UUID·시각은 설명용이며 실제 레코드를 만들지 않습니다.
 500 예제는 예상하지 못한 서버 장애의 응답 형식이며 의도적인 장애 유발 요청은 제공하지 않습니다.
+"""
+
+WORKFLOW += """
+Model도 동일한 순서로 `/models`, `/models/{model_id}/logs`, `/model-logs/{log_id}`에서 실행합니다.
+Model 자동 생성 예제는 Galaxy S24 → GAL입니다.
+직접 코드는 양끝 공백을 제거하고 영문·숫자 3자를 대문자로 변환합니다.
 """

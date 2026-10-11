@@ -1,6 +1,6 @@
 # API 응답·오류·페이지네이션 규약
 
-Company 구현에 사용하는 계약을 확정했다. 인증·권한 및 다른 차원의 상세 계약은 이번 구현 범위 밖이다. 공통 카탈로그의 인증 오류는 프레임워크 오류 변환을 위한 정의이며 인증 기능 구현을 의미하지 않는다.
+Company·Model 구현에 사용하는 계약을 확정했다. 인증·권한 및 다른 차원의 상세 계약은 이번 구현 범위 밖이다. 공통 카탈로그의 인증 오류는 프레임워크 오류 변환을 위한 정의이며 인증 기능 구현을 의미하지 않는다.
 
 ## 성공 응답
 
@@ -53,6 +53,39 @@ Company 구현에 사용하는 계약을 확정했다. 인증·권한 및 다른
 - 로그 cursor는 Company 목록과 구분하고 회사 UUID에 묶는다. 다른 회사 또는 다른 목록의 cursor는 `INVALID_CURSOR`/400이다. 같은 회사에서 limit 변경은 허용한다.
 - 로그를 직접 생성·수정·삭제하는 API와 전체 회사의 통합 이력 목록·검색은 제공하지 않는다. 인증·권한은 이번 범위 밖이다.
 
+## Model 요청·응답
+
+| 메서드·경로 | 입력 | 성공 |
+| --- | --- | --- |
+| POST `/models` | JSON `name` 필수, `code` 생략 가능 | 201 단건 |
+| GET `/models` | 선택적 query `cursor`, `limit` | 200 목록 |
+| GET `/models/{model_id}` | UUID 식별자 | 200 단건 |
+| PATCH `/models/{model_id}` | JSON `name` 필수 | 200 단건 |
+| DELETE `/models/{model_id}` | UUID 식별자 | 204 |
+
+- 응답 필드는 `id`, `name`, `code`, `created_at`, `updated_at`이다. UUID v4와 UTC 시각을 사용한다.
+- 모델명은 문자열이며 양끝 공백 제거 후 1~100자다. 내부 공백·한글·기호·이모지를 보존하고 중복을 허용한다. NUL·단독 surrogate는 422다.
+- 직접 코드는 양끝 공백을 제거한 뒤 ASCII 영문·숫자 정확히 3자를 대문자로 정규화한다. 내부 공백·기호는 422다. ` s24 `는 `S24`가 된다.
+- 코드 필드 생략만 자동 생성이다. 명시적 null·빈 문자열·공백만 있는 문자열·잘못된 타입은 422다. 생성 규칙은 [Model](features/dimension/model.md)을 따른다.
+- 알 수 없는 JSON 필드, PATCH의 code·빈 객체는 422다. 같은 이름 수정은 200이며 데이터·수정 시각·이력은 변경하지 않는다.
+- 없는 대상·삭제 후 조회·재삭제는 404, 잘못된 UUID는 422다. 삭제는 물리 삭제이며 코드 재사용 시 새 UUID를 부여한다.
+- 목록은 `(created_at ASC, id ASC)`, 기본 20개·1~100개이며 공통 cursor 계약을 따른다. 토큰 조회 식별자는 Model 전용이며 Company·다른 목록 cursor를 거부한다.
+- 검색·선택 정렬·총 개수·캐시는 제공하지 않는다. 알 수 없는 query 파라미터는 Company와 같이 무시한다.
+- 별도 멱등성 키·버전 필드는 없다. 동시 수정·삭제는 행 잠금 획득 후 최신 값을 처리하며 나중 수정이 최종 값이다.
+
+## ModelLog 조회
+
+| 메서드·경로 | 입력 | 성공 |
+| --- | --- | --- |
+| GET `/models/{model_id}/logs` | 원래 Model UUID, 선택적 query `cursor`, `limit` | 200 이력 목록 |
+| GET `/model-logs/{log_id}` | 로그 UUID | 200 이력 단건 |
+
+- 응답은 `id`, `model_id`, `operation`, `occurred_at`, `request_id`, `before`, `after`다. operation은 `create`·`update`·`delete`, 스냅샷은 `id/name/code`다. 생성 전·삭제 후는 null이다.
+- CompanyLog와 동일하게 현재 조회의 `meta.request_id`와 변경 당시 로그의 `request_id`를 구분한다.
+- 삭제된 Model의 이력도 조회한다. 기록 없는 UUID는 200 빈 목록, 없는 로그 단건은 404, 잘못된 UUID는 422다.
+- `(occurred_at ASC, id ASC)`로 정렬하며 기본 20개·1~100개다. cursor는 대상 Model UUID와 조회·정렬에 묶는다. 다른 Model·다른 차원·다른 목록의 cursor는 `INVALID_CURSOR`/400이다. 동일 목록의 limit 변경은 허용한다.
+- 실제 commit 순서·총 개수·스냅샷 일관성은 보장하지 않는다. 로그 직접 생성·수정·삭제 API, 통합 이력 검색, 인증·권한은 제공하지 않는다.
+
 ## Cursor 페이지네이션
 
 - 선택적 `cursor`와 `limit`을 받는다. 기본 `limit=20`, 범위 1~100이고 범위를 벗어나면 422다.
@@ -97,15 +130,17 @@ Company 구현에 사용하는 계약을 확정했다. 인증·권한 및 다른
 | `METHOD_NOT_ALLOWED` | 405 | 지원하지 않는 요청 방식입니다. |
 | `CONFLICT` | 409 | 현재 상태에서는 요청을 처리할 수 없습니다. |
 | `INTERNAL_ERROR` | 500 | 요청 처리 중 오류가 발생했습니다. |
+| `MODEL_CODE_DUPLICATE` | 409 | 이미 존재하는 모델 코드입니다. |
 | `COMPANY_CODE_DUPLICATE` | 409 | 이미 존재하는 회사 코드입니다. |
 | `DIMENSION_AUTO_CODE_DUPLICATE` | 409 | 자동 생성된 코드가 이미 존재합니다. 코드를 직접 입력해 주세요. |
 | `DIMENSION_AUTO_CODE_UNAVAILABLE` | 422 | {dimension}에서 코드를 자동으로 생성할 수 없습니다. 코드를 직접 입력해 주세요. |
 
-Company는 `{dimension}`에 `company`를 사용한다. 자동 생성 실패의 기존 합의 메시지를 유지했다. 도메인 오류는 application 오류로 변환한 뒤 presentation에서 HTTP로 매핑한다. 알려진 Company 코드 UNIQUE 위반만 코드 중복으로 취급하고 예상하지 못한 DB 오류는 INTERNAL_ERROR로 처리한다.
+Company는 `{dimension}`에 `company`, Model은 `model`을 사용한다. 자동 생성 실패의 기존 합의 메시지를 유지했다. 도메인 오류는 application 오류로 변환한 뒤 presentation에서 HTTP로 매핑한다. 각 차원의 알려진 코드 UNIQUE 위반만 코드 중복으로 취급하고 예상하지 못한 DB 오류는 INTERNAL_ERROR로 처리한다.
 
 ## 구현·변경 절차
 
 - Scalar `/docs`에서 이름 있는 요청·응답·경로·쿼리 예제를 선택할 수 있다. 각 예제의 예상 상태·사전 조건과 문서 상단 Introduction의 HTTP 테스트 순서를 따른다. 고정 UUID는 설명용이고, 정상 cursor는 실제 응답의 `meta.page.next_cursor`에서 복사한다. 첫 페이지 기본 요청에는 cursor를 포함하지 않는다. cursor는 자동 입력되는 고정 예제 없이 파라미터 설명에 실패 입력의 수동 실행 방법을 안내한다.
+- Model 예제 원본은 [Model OpenAPI 예제](../src/mdm_demo/presentation/schemas/model_examples.py)이며 [실행 테스트](../tests/api/test_model_openapi_examples.py)로 성공·실패·경계값을 검증한다.
 - 예제 원본은 [OpenAPI 예제](../src/mdm_demo/presentation/schemas/examples.py)이며 공통 오류 메시지는 카탈로그를 참조한다. [예제 실행 테스트](../tests/api/test_openapi_examples.py)는 OpenAPI에서 꺼낸 실제 요청 예제를 실행하고 null·빈 객체 및 응답 형태 보존을 확인한다.
 
 - [공통 스키마](../src/mdm_demo/presentation/schemas/common.py), [카탈로그](../src/mdm_demo/presentation/error_catalog.py), [예외 처리기](../src/mdm_demo/presentation/exception_handlers.py)를 재사용한다.
