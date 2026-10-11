@@ -144,18 +144,21 @@ RENAME_EXAMPLES = {
 }
 
 
-def id_examples(kind: str) -> dict[str, Any]:
+def id_examples(kind: str, *, success_status: int = 200) -> dict[str, Any]:
     return {
-        "replace_with_actual_id": example(
-            "실제 응답 UUID로 교체",
+        "replace_with_actual_id": request_example(
+            f"{success_status} · 실제 응답 UUID로 교체",
             LOG_ID if kind == "log" else MODEL_ID,
+            success_status,
             "고정 예시 UUID는 DB에 존재한다고 가정하지 않습니다. "
             + (
                 "모델별 이력 목록 data[].id를 복사하세요."
                 if kind == "log"
                 else "POST /models의 data.id를 복사하세요. "
                 "삭제 후에도 이력 경로에서는 같은 UUID를 사용합니다."
-            ),
+            )
+            + " 다른 입력도 각 API의 정상 조건을 충족해야 합니다."
+            + (" 삭제 성공 시 응답 본문은 없습니다." if success_status == 204 else ""),
         ),
         "missing": example(
             "기록 없는 UUID",

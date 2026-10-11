@@ -35,6 +35,19 @@ def create_app(
     model_service: ModelUseCases | None = None,
     model_log_service: ModelLogUseCases | None = None,
 ) -> FastAPI:
+    """Build default services, or use a complete set of caller-provided services."""
+    services = {
+        "service": service,
+        "log_service": log_service,
+        "model_service": model_service,
+        "model_log_service": model_log_service,
+    }
+    missing = [name for name, value in services.items() if value is None]
+    if missing and len(missing) != len(services):
+        raise ValueError(
+            "Provide all four services or omit all of them. Missing: " + ", ".join(missing)
+        )
+
     @asynccontextmanager
     async def lifespan(app: FastAPI) -> AsyncGenerator[None]:
         if service is not None:

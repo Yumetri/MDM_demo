@@ -141,6 +141,10 @@ async def rename_model(
         ),
     },
 )
-async def delete_model(model_id: ModelID, service: ModelService, request_id: RequestID) -> Response:
+async def delete_model(
+    model_id: Annotated[UUID, Path(openapi_examples=id_examples("model", success_status=204))],
+    service: ModelService,
+    request_id: RequestID,
+) -> Response:
     await service.delete(model_id, request_id)
     return Response(status_code=204)

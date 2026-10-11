@@ -11,6 +11,40 @@ def body_examples(schema, path, method):
     return schema["paths"][path][method]["requestBody"]["content"]["application/json"]["examples"]
 
 
+@pytest.mark.parametrize("dimension,collection", [("company", "companies"), ("model", "models")])
+async def test_normal_id_examples_match_operation_results(client, dimension, collection):
+    schema = (await client.get("/openapi.json")).json()
+    created = await client.post(f"/{collection}", json={"name": "Example"})
+    assert created.status_code == 201
+    entity_id = created.json()["data"]["id"]
+    entity_path = f"/{collection}/{entity_id}"
+    template = f"/{collection}/{{{dimension}_id}}"
+    logs = await client.get(entity_path + "/logs")
+    assert logs.status_code == 200
+    log_id = logs.json()["data"][0]["id"]
+
+    for path_template, actual_path, method, expected in [
+        (template, entity_path, "get", 200),
+        (template, entity_path, "patch", 200),
+        (template + "/logs", entity_path + "/logs", "get", 200),
+        (f"/{dimension}-logs/{{log_id}}", f"/{dimension}-logs/{log_id}", "get", 200),
+        (template, entity_path, "delete", 204),
+    ]:
+        operation = schema["paths"][path_template][method]
+        parameter = next(item for item in operation["parameters"] if item["in"] == "path")
+        example = parameter["examples"]["replace_with_actual_id"]
+        assert example["summary"].startswith(f"{expected} · ")
+        assert example["x-expected-status"] == expected
+        assert "복사" in example["description"]
+        kwargs = {"json": {"name": "Renamed example"}} if method == "patch" else {}
+        response = await client.request(method, actual_path, **kwargs)
+        assert response.status_code == example["x-expected-status"]
+        if expected == 204:
+            assert "응답 본문은 없습니다" in example["description"]
+            assert "content" not in operation["responses"]["204"]
+            assert response.content == b""
+
+
 @pytest.mark.parametrize("key", list(CREATE_EXAMPLES))
 async def test_create_openapi_examples_are_executable(client, key):
     schema = (await client.get("/openapi.json")).json()
