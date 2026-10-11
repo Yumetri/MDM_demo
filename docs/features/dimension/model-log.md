@@ -78,3 +78,5 @@ DB 관리자의 TRUNCATE·트리거 제거까지 차단하는 감사 보안 체�
 - [Dimension 목차](README.md)
 
 트랜잭션 조립은 [Model UoW](../../../src/mdm_demo/infrastructure/persistence/units_of_work/model.py)를 사용한다. 차원과 로그 저장소는 같은 세션을 공유하고, 세션 정리·commit·rollback은 [공통 구현](../../../src/mdm_demo/infrastructure/persistence/unit_of_work.py)에서 처리한다.
+
+로그 조회 유스케이스는 [ModelLogUnitOfWork](../../../src/mdm_demo/application/ports/units_of_work/model.py)에 의존하며 로그 저장소만 요구한다. 실행 시 기존 차원별 SQLAlchemy UoW를 그대로 사용할 수 있다. 이는 의존하는 저장소의 범위를 좁히는 타입 계약이며 DB 읽기 전용 권한을 부여하는 장치는 아니다.

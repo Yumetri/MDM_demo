@@ -8,3 +8,7 @@ from mdm_demo.application.ports.unit_of_work import UnitOfWork
 class ModelUnitOfWork(UnitOfWork, Protocol):
     models: ModelRepository
     model_logs: ModelLogRepository
+
+
+class ModelLogUnitOfWork(UnitOfWork, Protocol):
+    model_logs: ModelLogRepository
