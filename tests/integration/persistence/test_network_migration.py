@@ -9,7 +9,7 @@ from sqlalchemy import inspect, text
 async def test_network_migration_preserves_all_existing_dimensions(database):
     engine, _ = database
     config = Config("alembic.ini")
-    assert ScriptDirectory.from_config(config).get_heads() == ["0008_merge_dimension_heads"]
+    assert ScriptDirectory.from_config(config).get_heads() == ["0009_merge_memory_dimensions"]
     schema = "test_network_migration_" + uuid4().hex
     async with engine.connect() as connection:
         transaction = await connection.begin()

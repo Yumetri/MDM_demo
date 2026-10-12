@@ -21,6 +21,7 @@ ERRORS = {
     "METHOD_NOT_ALLOWED": ErrorSpec(405, "지원하지 않는 요청 방식입니다."),
     "CONFLICT": ErrorSpec(409, "현재 상태에서는 요청을 처리할 수 없습니다."),
     "INTERNAL_ERROR": ErrorSpec(500, "요청 처리 중 오류가 발생했습니다."),
+    "MEMORY_CAPACITY_DUPLICATE": ErrorSpec(409, "이미 존재하는 저장공간 용량입니다."),
     "CATEGORY_NAME_DUPLICATE": ErrorSpec(409, "이미 존재하는 분류명입니다."),
     "CATEGORY_CODE_DUPLICATE": ErrorSpec(409, "이미 존재하는 분류 코드입니다."),
     "NETWORK_NAME_DUPLICATE": ErrorSpec(409, "이미 존재하는 네트워크 규격명입니다."),

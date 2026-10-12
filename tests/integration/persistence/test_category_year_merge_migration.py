@@ -15,7 +15,7 @@ def migrate(connection, revision, *, downgrade=False):
     config = Config("alembic.ini")
     config.attributes["connection"] = connection
     script = ScriptDirectory.from_config(config)
-    assert script.get_heads() == ["0008_merge_dimension_heads"]
+    assert script.get_heads() == ["0009_merge_memory_dimensions"]
     head = script.get_revision(MERGE_REVISION)
     assert head is not None and head.down_revision == PARENTS
     if downgrade:

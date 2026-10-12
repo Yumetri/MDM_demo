@@ -9,12 +9,19 @@ from sqlalchemy import inspect, text
 from sqlalchemy.engine import Connection
 
 MERGE_REVISION = "0005_merge_brand_country"
+LATEST_REVISION = "0009_merge_memory_dimensions"
 
 
 def migrate(connection: Connection, revision: str, *, downgrade: bool = False) -> None:
     config = Config("alembic.ini")
     config.attributes["connection"] = connection
-    assert ScriptDirectory.from_config(config).get_heads() == ["0008_merge_dimension_heads"]
+    script = ScriptDirectory.from_config(config)
+    assert script.get_heads() == [LATEST_REVISION]
+    head = script.get_revision(LATEST_REVISION)
+    assert head is not None and head.down_revision == (
+        "0008_merge_dimension_heads",
+        "0007_merge_year_memory",
+    )
     if downgrade:
         command.downgrade(config, revision)
     else:

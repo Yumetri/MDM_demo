@@ -106,3 +106,8 @@ PostgreSQL에 저장할 수 없는 NUL·UTF-8로 표현할 수 없는 단독 sur
 ### Category 병합 후 최신 head
 
 사용자가 Category PR #20과의 추가 통합을 승인해 기준은 `c5cea8aacd8a1cced8cdf10a6ce72983a50da8d6`이다. 앞 절의 Network·Year 병합 리비전은 그대로 보존하며 [빈 최종 병합](../../../migrations/versions/0008_merge_dimension_heads.py)이 Category·Year 병합 경로와 합친다. [통합 보존 검사](../../../tests/integration/persistence/test_network_year_merge_migration.py)는 8개 초기 상태에서 세 차원의 데이터·로그 보존과 반복 적용을 확인한다.
+
+
+### Memory 통합 후 마이그레이션
+
+기존 적용 리비전은 유지하며 [0009 병합](../../../migrations/versions/0009_merge_memory_dimensions.py)이 main의 0008 head와 Memory의 0007 head를 연결한다. [통합 보존 검사](../../../tests/integration/persistence/test_memory_main_merge_migration.py)는 빈 DB·각 선행 head·양쪽 head에서 8개 차원의 데이터·이력 보존과 merge-only downgrade·재적용을 검증한다. 전체 테스트 1160개와 ORM 일치 검사가 통과했다.

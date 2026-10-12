@@ -17,6 +17,9 @@
 - [Network](network.md)
 - [NetworkLog](network-log.md)
 
+- [Memory](memory.md)
+- [MemoryLog](memory-log.md)
+
 공통 구현 원칙은 [이슈 #1](https://github.com/Yumetri/MDM_demo/issues/1), 차원별 합의 사항과 미정 항목은 각 기능 문서를 따른다.
 
 [전체 기능맵](../README.md)

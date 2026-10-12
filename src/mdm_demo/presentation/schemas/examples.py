@@ -250,6 +250,8 @@ def responses(
             }
             else None
         )
+        if code == "MEMORY_CAPACITY_DUPLICATE":
+            field = "body.capacity"
         if code in {"COUNTRY_NAME_DUPLICATE", "CATEGORY_NAME_DUPLICATE", "NETWORK_NAME_DUPLICATE"}:
             field = "body.name"
         if code == "YEAR_DUPLICATE":
@@ -367,6 +369,33 @@ Year 목록은 연도 내림차순, 이력은 기록 시각·UUID 내림차순�
 공통 CRUD·이력·cursor 실행 순서는 위 안내를 따릅니다.
 /years/{year_id}/logs와 /year-logs/{log_id}에서 실제 응답 UUID를 사용하세요.
 예제 재실행 전 본인이 만든 해당 연도를 삭제해 정리하세요. 삭제 후 이력은 유지됩니다.
+
+### Memory 테스트 준비
+Memory는 저장공간 용량이며 POST /memories의 capacity와 unit은 모두 필수입니다.
+code를 보내지 마세요. 256 + GB는 256GB, 1 + TB는 1TB로 서버가 자동 생성합니다.
+create_gb로 256GB를 생성하고 data.id를 후속 경로에 복사하세요.
+수정 요청에도 두 필드를 모두 보내며 용량·단위가 달라지면 코드도 바뀝니다.
+표기 변경 예제는 create_tb로 1TB를 생성한 UUID에서 실행하세요(1TB→1000GB, 이력 추가).
+중복 수정 예제는 create_second로 512GB를 만든 뒤 256GB의 UUID에서 실행하세요.
+같은 용량이 있으면 MEMORY_CAPACITY_DUPLICATE/409입니다.
+성공 예제 재실행 전 본인이 만든 항목만 정리하세요.
+이력 경로는 /memories/{memory_id}/logs, 로그 단건은 /memory-logs/{log_id}입니다.
+공통 CRUD·이력·cursor 테스트 순서는 위 안내를 따릅니다.
+
+실수 실패 예제는 256.5를 사용합니다(422 VALIDATION_ERROR, 데이터·이력 유지).
+Scalar는 256.0을 JSON 숫자 256으로 다시 직렬화할 수 있으므로 정수형 실수 거부 검증에는
+아래 원시 JSON 요청을 사용하세요. base URL은 실행 환경에 맞추고 MEMORY_ID는
+먼저 생성한 응답의 data.id로 교체하세요. 두 요청 모두 422 VALIDATION_ERROR이며
+생성되지 않고 기존 데이터·시각·이력도 바뀌지 않습니다.
+
+```sh
+BASE_URL='http://127.0.0.1:8000'
+MEMORY_ID='생성 응답 data.id로 교체'
+curl -i -X POST "$BASE_URL/memories" \\
+  -H 'Content-Type: application/json' --data-raw '{"capacity":256.0,"unit":"GB"}'
+curl -i -X PATCH "$BASE_URL/memories/$MEMORY_ID" \\
+  -H 'Content-Type: application/json' --data-raw '{"capacity":256.0,"unit":"GB"}'
+```
 """
 
 

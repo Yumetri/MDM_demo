@@ -174,6 +174,7 @@ HTTP 입력·응답·오류 처리는 Model과 동일하게 적용하기로 합�
 | `METHOD_NOT_ALLOWED` | 405 | 지원하지 않는 요청 방식입니다. |
 | `CONFLICT` | 409 | 현재 상태에서는 요청을 처리할 수 없습니다. |
 | `INTERNAL_ERROR` | 500 | 요청 처리 중 오류가 발생했습니다. |
+| `MEMORY_CAPACITY_DUPLICATE` | 409 | 이미 존재하는 저장공간 용량입니다. |
 | `MODEL_CODE_DUPLICATE` | 409 | 이미 존재하는 모델 코드입니다. |
 | `BRAND_CODE_DUPLICATE` | 409 | 이미 존재하는 브랜드 코드입니다. |
 | `COMPANY_CODE_DUPLICATE` | 409 | 이미 존재하는 회사 코드입니다. |
@@ -353,6 +354,33 @@ Country는 코드 자동 생성 기능이 없으므로 자동 생성 전용 오�
 
 인증·권한·행위자, 차원 캐시, 로그 통합 검색·자동 만료, 멱등성 키·자동 재시도는 추가하지 않는다. 수정·삭제는 행 잠금으로 직렬 처리하며 별도 낙관적 버전 검사를 추가하지 않는다. 검증 근거는 [Year 검증 보고](reports/issue-7-validation.md)를 따른다.
 
+## Memory/MemoryLog HTTP 계약
+
+2026-10-12 사용자와 확정한 Memory 계약이다. 구현·OpenAPI·관련 테스트에 함께 반영한다. 업무 의미는 [Memory](features/dimension/memory.md)·[MemoryLog](features/dimension/memory-log.md)를 따른다.
+
+| 메서드·경로 | 입력 | 성공 |
+| --- | --- | --- |
+| POST /memories | JSON capacity·unit 모두 필수 | 201 단건 |
+| GET /memories | 선택적 cursor·limit | 200 목록 |
+| GET /memories/{memory_id} | Memory UUID | 200 단건 |
+| PATCH /memories/{memory_id} | JSON capacity·unit 모두 필수 | 200 단건 |
+| DELETE /memories/{memory_id} | Memory UUID | 204, 본문 없음 |
+| GET /memories/{memory_id}/logs | 원본 UUID, 선택적 cursor·limit | 200 이력 목록 |
+| GET /memory-logs/{log_id} | 로그 UUID | 200 로그 단건 |
+
+- 생성·수정에는 capacity와 unit만 받는다. capacity는 엄격한 JSON 정수 1~2,147,483,647이며 bool·실수·문자열·null을 거부한다. unit은 문자열, trim·대문자 정규화 후 GB 또는 TB만 허용한다. 생략·null·공백만 있는 값·내부 공백·지원하지 않는 단위는 422 VALIDATION_ERROR다.
+- code는 항상 서버가 capacity의 10진 정수 문자열 + 정규화한 unit으로 생성한다. 요청의 code·capacity_gb·name 및 알 수 없는 JSON 필드는 422다. PATCH에서 한 필드만 보내거나 빈 객체를 보내는 것도 422다.
+- Memory 응답은 id·capacity·unit·code·created_at·updated_at이다. capacity는 정수이며 unit은 GB/TB다. 내부 환산값 capacity_gb는 요청·응답에 노출하지 않는다. UUID v4·UTC 시각·기존 공통 data/meta envelope를 재사용한다.
+- 수정은 UUID·created_at을 유지하고 capacity·unit·code를 함께 바꾼다. 1TB → 1000GB는 실제 변경으로 updated_at·로그를 갱신한다. 정규화 후 capacity·unit이 모두 같으면 200을 반환하며 데이터·시각·로그는 유지한다.
+- 환산 용량 중복 생성·수정은 MEMORY_CAPACITY_DUPLICATE/409, 메시지는 '이미 존재하는 저장공간 용량입니다.'다. errors.details의 field는 body.capacity이며 세부 code·message는 동일 오류를 사용한다. 알려진 환산 용량·파생 코드 UNIQUE 위반만 이 오류로 변환한다.
+- 코드 직접 입력을 안내하는 DIMENSION_AUTO_CODE_DUPLICATE·DIMENSION_AUTO_CODE_UNAVAILABLE는 Memory에 사용하지 않는다.
+- 없는 Memory의 단건·수정·삭제, 삭제 후 조회·재삭제, 없는 로그 단건은 404 NOT_FOUND다. 잘못된 UUID는 422 VALIDATION_ERROR다. 이력 목록은 Memory의 현재 존재를 검사하지 않으며 기록 없는 UUID에는 200 빈 목록을 반환한다.
+- 로그 응답은 id·memory_id·operation·occurred_at·request_id·before·after다. 스냅샷은 id·capacity·unit·code이며 capacity는 정수다. 작업은 create/update/delete, 생성 전과 삭제 후는 null이다. 로그 request_id는 변경 당시 요청이고 meta.request_id는 현재 조회 요청이다.
+- 목록 limit 기본값은 20, 허용 범위는 1~100이다. Memory는 created_at ASC/id ASC, 이력은 occurred_at ASC/id ASC로 정렬한다. limit 변경은 허용한다.
+- cursor는 HMAC 서명·Memory 목록/로그 목록/대상 UUID 별 문맥으로 분리한다. 빈 값·형식 오류·변조·다른 차원·목록·대상의 cursor는 INVALID_CURSOR/400이다. 첫 페이지에는 cursor를 생략하고 다음 페이지에는 실제 meta.page.next_cursor를 사용한다. 경계 행 삭제 이후도 경계값으로 조회한다.
+- 총 개수·순회 중 스냅샷 일관성·실제 commit 순서는 보장하지 않는다. 검색·필터·사용자 지정 정렬은 제공하지 않으며 알 수 없는 query는 기존 차원처럼 무시한다.
+- 인증·권한·캐시는 합의한 범위에서 제외한다. 기존 공통 방식처럼 멱등성 키·자동 재시도·행위자·자동 이력 만료는 추가하지 않는다.
+- OpenAPI 이름 있는 예제에 생성·수정·단건·목록·삭제·이력, 타입/범위/단위/필수 필드 오류, GB/TB 동치 중복·중복 수정, no-op·표기 변경·삭제 후 조회를 포함한다. 실제 UUID·cursor의 복사 순서와 상태 의존 예제의 준비·정리를 안내한다. 204는 본문 예제가 없고 선택적 cursor는 기본 예제로 자동 입력하지 않는다.
 ## Network·NetworkLog HTTP 계약
 
 이슈 #8에서 업무 규칙·공통 HTTP 표현·오류 메시지·운영 기본 정책을 사용자와 합의하고 런타임 오류 카탈로그·OpenAPI·API·테스트에 반영했다.

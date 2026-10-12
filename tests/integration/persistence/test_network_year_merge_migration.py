@@ -25,7 +25,7 @@ async def test_network_year_merge_preserves_each_head_and_audit_history(database
     engine, _ = database
     config = Config("alembic.ini")
     scripts = ScriptDirectory.from_config(config)
-    assert scripts.get_heads() == ["0008_merge_dimension_heads"]
+    assert scripts.get_heads() == ["0009_merge_memory_dimensions"]
     head = scripts.get_revision("0007_merge_network_year")
     assert head is not None and isinstance(head.down_revision, tuple)
     assert set(head.down_revision) == {"0006_network", "0006_year_dimension"}
@@ -85,7 +85,7 @@ async def test_network_year_merge_preserves_each_head_and_audit_history(database
                 await connection.run_sync(lambda conn: command.upgrade(config, "head"))
                 assert (
                     await connection.execute(text("SELECT version_num FROM alembic_version"))
-                ).scalars().all() == ["0008_merge_dimension_heads"]
+                ).scalars().all() == ["0009_merge_memory_dimensions"]
                 for table in (
                     "networks",
                     "network_logs",

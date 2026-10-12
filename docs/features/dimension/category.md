@@ -100,3 +100,8 @@
 | [Brand](brand.md) | 영숫자 코드·자동 생성의 참고 구현 |
 
 [Dimension 목차](README.md)
+
+
+### Memory 통합 후 마이그레이션
+
+기존 적용 리비전은 유지하며 [0009 병합](../../../migrations/versions/0009_merge_memory_dimensions.py)이 main의 0008 head와 Memory의 0007 head를 연결한다. [통합 보존 검사](../../../tests/integration/persistence/test_memory_main_merge_migration.py)는 빈 DB·각 선행 head·양쪽 head에서 8개 차원의 데이터·이력 보존과 merge-only downgrade·재적용을 검증한다. 전체 테스트 1160개와 ORM 일치 검사가 통과했다.

@@ -21,7 +21,7 @@ async def test_year_migration_preserves_all_dimensions_and_roundtrip(database, b
     engine, _ = database
     schema = "test_year_migration_" + uuid4().hex
     assert ScriptDirectory.from_config(Config("alembic.ini")).get_heads() == [
-        "0008_merge_dimension_heads"
+        "0009_merge_memory_dimensions"
     ]
     async with engine.connect() as connection:
         transaction = await connection.begin()
@@ -43,7 +43,7 @@ async def test_year_migration_preserves_all_dimensions_and_roundtrip(database, b
                 for table in ["companies", "models", "brands", "countries"]:
                     before[table] = (await connection.execute(text(f"SELECT * FROM {table}"))).all()
             for _ in range(2):
-                await connection.run_sync(lambda conn: migrate(conn, "head"))
+                await connection.run_sync(lambda conn: migrate(conn, "0006_year_dimension"))
                 for table, rows in before.items():
                     assert (await connection.execute(text(f"SELECT * FROM {table}"))).all() == rows
                 for table in ["years", "year_logs"]:
