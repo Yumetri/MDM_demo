@@ -1,6 +1,6 @@
 # API 응답·오류·페이지네이션 규약
 
-Company·Model·Brand·Country 구현에 사용하는 계약을 확정했다. 인증·권한 및 다른 차원의 상세 계약은 이번 구현 범위 밖이다. 공통 카탈로그의 인증 오류는 프레임워크 오류 변환을 위한 정의이며 인증 기능 구현을 의미하지 않는다.
+Company·Model·Brand·Country·Year 구현에 사용하는 계약을 확정했다. 인증·권한 및 다른 차원의 상세 계약은 이번 구현 범위 밖이다. 공통 카탈로그의 인증 오류는 프레임워크 오류 변환을 위한 정의이며 인증 기능 구현을 의미하지 않는다.
 
 ## 성공 응답
 
@@ -239,3 +239,67 @@ Country는 코드 자동 생성 기능이 없으므로 자동 생성 전용 오�
 - Country 생성은 name·code가 필수다. 이름은 trim → 대문자 → NFC 후 1~100자이며 유일하다. NUL·단독 surrogate는 거부한다. 코드는 trim 후 ASCII 영문 3자로 검증하고 대문자로 저장하며 유일하다. 코드 자동 생성·ISO 존재 검증은 하지 않는다.
 - PATCH는 name만 받으며 정규화된 이름이 같으면 수정 시각·로그를 변경하지 않는다. 물리 삭제 후 이름·코드 재사용은 새 UUID로 처리한다.
 - [Country 예제 원본](../src/mdm_demo/presentation/schemas/country_examples.py)과 [예제 실행 테스트](../tests/api/test_country_openapi_examples.py)로 정상·실패·경계값을 검증한다.
+
+
+## Year·YearLog HTTP 계약
+
+2026-10-12 사용자와 합의해 런타임·OpenAPI·테스트에 반영한 계약이다. Year는 제품 출시 연도 차원이다. 업무 규칙은 [Year](features/dimension/year.md)·[YearLog](features/dimension/year-log.md), 구현 순서는 [작업 계획](plans/issue-7-year-dimension.md)을 따른다.
+
+### 합의한 입력·변경 정책
+
+- 생성·수정 본문은 필수 `year` 하나만 받는다. JSON 정수 1900~2999만 허용한다.
+- 문자열 `"2024"`, 실수 `2024.0`, boolean, null, 필드 생략, 빈 객체·잘못된 본문 타입, 범위 밖 값은 422 `VALIDATION_ERROR`다. 자동 형변환하지 않는다.
+- `code`·`name`·알 수 없는 필드는 거부한다. 코드 생략은 서버 자동 생성이며 null·빈 코드도 직접 입력이므로 거부한다.
+- 서버는 `year: 2024`에서 `code: "2024"`를 만든다. 연도·코드는 각각 유일하다.
+- 수정은 UUID를 유지하고 연도·코드를 함께 변경한다. 중복 연도면 변경·로그 모두 취소한다.
+- 같은 연도로 수정하면 200 성공이고 데이터·수정 시각·로그는 그대로다.
+- 삭제는 물리 삭제·로그 보존이며 같은 연도 재등록은 새 UUID를 발급한다.
+- Year 목록은 연도 내림차순, 이력 목록은 기록 시각·로그 UUID 내림차순이다. 두 목록 모두 기본 20개·허용 1~100개로 합의했다. 초기 데이터는 자동 생성하지 않는다.
+- 조회는 단건·고정 정렬 목록·대상별 이력까지 제공하며 검색·연도 범위 필터·총 개수는 제외한다.
+
+### HTTP 경로·응답
+
+| API | 입력 | 성공 응답 |
+| --- | --- | --- |
+| POST `/years` | 본문 `year` | 201 단건 |
+| GET `/years` | 선택적 query `cursor`, `limit` | 200 목록 |
+| GET `/years/{year_id}` | UUID 식별자 | 200 단건 |
+| PATCH `/years/{year_id}` | UUID, 본문 `year` | 200 단건 |
+| DELETE `/years/{year_id}` | UUID 식별자 | 204 본문 없음 |
+| GET `/years/{year_id}/logs` | 원래 Year UUID, 선택적 `cursor`, `limit` | 200 이력 목록 |
+| GET `/year-logs/{log_id}` | 로그 UUID | 200 이력 단건 |
+
+- 기존 성공·오류 envelope와 서버 발급 request ID를 사용한다.
+- Year 응답은 `id/year/code/created_at/updated_at`이다. year는 정수, code는 문자열, 식별자는 UUID v4, 시각은 UTC다.
+- 로그 응답은 `id/year_id/operation/occurred_at/request_id/before/after`다. before/after는 `id/year/code` 스냅샷이며 생성 전·삭제 후는 null이다. 원본 생성/수정 시각은 스냅샷에 포함하지 않는다.
+- 로그의 request_id는 변경 당시 요청, meta.request_id는 현재 조회 요청이다.
+- 없는 Year의 조회·수정·삭제, 삭제 후 조회·재삭제, 없는 로그 단건은 404 `NOT_FOUND`다. 잘못된 UUID는 422다.
+- 대상별 이력 목록은 현재 Year 존재를 검사하지 않으며 기록 없는 UUID도 200 빈 목록이다.
+- 합의한 목록 정렬은 Year의 유일한 year DESC와 이력의 occurred_at DESC/id DESC다. 이력의 다음 페이지는 (occurred_at, id)가 마지막 경계보다 작은 구간을 조회한다. 기본 20개·허용 1~100개다.
+- Year cursor는 정수 연도 경계·조회 종류·정렬에 묶고 다음 페이지는 year가 경계보다 작은 구간을 조회한다. 이력 cursor는 대상 UUID에도 묶는다. 경계 행이 삭제돼도 토큰은 계속 사용하며 같은 목록의 limit 변경을 허용한다.
+- 첫 페이지는 cursor를 생략하고 다음 페이지는 실제 응답 meta.page.next_cursor를 복사한다. 고정된 정상 토큰이나 실패 예제를 기본 입력으로 제공하지 않는다.
+- 잘못된·빈·변조·다른 목록/차원/대상의 cursor는 400 `INVALID_CURSOR`다. 서명·키 교체·만료 없음 정책은 공통 cursor 규약을 따른다.
+- 순회 중 Year 수정·재등록에 따른 이동과 중복·누락, 총 개수·스냅샷 일관성을 보장하지 않는다. 이력 정렬은 실제 commit 순서를 보장하지 않는다.
+
+### 합의한 중복 오류
+
+| 코드 | HTTP | 메시지 | 적용 |
+| --- | --- | --- | --- |
+| `YEAR_DUPLICATE` | 409 | 이미 존재하는 출시 연도입니다. | 생성·수정에서 알려진 연도/자동 코드 UNIQUE 위반 |
+
+오류 details의 필드는 `body.year`다. 코드를 직접 입력할 수 없으므로 직접 코드 입력을 권하는 `DIMENSION_AUTO_CODE_DUPLICATE` 메시지는 사용하지 않는다. 다른 DB 실패는 중복으로 오인하지 않고 기존 내부 오류로 처리한다. 입력·없는 대상·cursor 오류 메시지는 기존 중앙 카탈로그를 재사용한다.
+
+### 예제·검증 기준
+
+- Scalar는 JavaScript 숫자를 재직렬화하므로 실수 실행 예제는 소수 부분이 남는 2024.5를 사용한다. 2024.0 거부 계약은 원문 JSON 요청과 생성·수정 API 테스트로 별도 확인한다.
+
+- 정상 생성·수정·같은 값 수정, 1900/2999 경계, 1899/3000 범위 오류, 생략/null/문자열/실수/boolean/추가 필드, 직접 code 입력, 생성·수정 중복, 없는 대상·삭제 후 조회·재삭제·재등록을 이름 있는 예제로 제공한다.
+- 생성 응답 UUID·이력 응답 UUID·실제 cursor의 복사 위치와 실행 순서를 안내한다. 수정 중복 예제는 두 연도를 먼저 생성하는 준비 절차를 둔다. 예제마다 예상 상태·오류·정리 절차를 기록한다.
+- 공통 순서는 문서 상단에 한 번 두고 Year의 준비 사항만 추가한다. 정상 cursor를 가짜 토큰으로 제시하지 않으며 204에는 본문 예제를 만들지 않는다.
+- OpenAPI에 노출된 본문·경로·query·응답 예제와 실제 대표 HTTP 응답을 테스트한다. Scalar에서 예제 선택·실행과 첫 페이지 코드/실제 요청의 cursor 생략을 확인한다.
+
+### 구현 범위
+
+독립 차원·Year CRUD·대상별 이력/로그 단건 조회를 제공하며 검색·연도 범위 필터·총 개수와 다른 차원의 FK 연결은 제외하기로 합의했다. 로그는 추가 전용이다.
+
+인증·권한·행위자, 차원 캐시, 로그 통합 검색·자동 만료, 멱등성 키·자동 재시도는 추가하지 않는다. 수정·삭제는 행 잠금으로 직렬 처리하며 별도 낙관적 버전 검사를 추가하지 않는다. 검증 근거는 [Year 검증 보고](reports/issue-7-validation.md)를 따른다.

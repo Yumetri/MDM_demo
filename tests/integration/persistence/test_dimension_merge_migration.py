@@ -9,12 +9,16 @@ from sqlalchemy import inspect, text
 from sqlalchemy.engine import Connection
 
 MERGE_REVISION = "0005_merge_brand_country"
+LATEST_REVISION = "0006_year_dimension"
 
 
 def migrate(connection: Connection, revision: str, *, downgrade: bool = False) -> None:
     config = Config("alembic.ini")
     config.attributes["connection"] = connection
-    assert ScriptDirectory.from_config(config).get_heads() == [MERGE_REVISION]
+    script = ScriptDirectory.from_config(config)
+    assert script.get_heads() == [LATEST_REVISION]
+    head = script.get_revision(LATEST_REVISION)
+    assert head is not None and head.down_revision == MERGE_REVISION
     if downgrade:
         command.downgrade(config, revision)
     else:
@@ -78,7 +82,7 @@ async def test_merge_upgrade_preserves_either_branch_and_existing_logs(database,
             await connection.run_sync(lambda conn: migrate(conn, "head"))
             assert (
                 await connection.execute(text("SELECT version_num FROM alembic_version"))
-            ).scalars().all() == [MERGE_REVISION]
+            ).scalars().all() == [LATEST_REVISION]
             for table, log_table, _ in dimensions:
                 for name in (table, log_table):
                     rows = (
@@ -100,6 +104,6 @@ async def test_merge_upgrade_preserves_either_branch_and_existing_logs(database,
             await connection.run_sync(lambda conn: migrate(conn, "head"))
             assert (
                 await connection.execute(text("SELECT version_num FROM alembic_version"))
-            ).scalars().all() == [MERGE_REVISION]
+            ).scalars().all() == [LATEST_REVISION]
         finally:
             await transaction.rollback()
