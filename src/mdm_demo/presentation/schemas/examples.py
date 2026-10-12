@@ -251,6 +251,8 @@ def responses(
         )
         if code in {"COUNTRY_NAME_DUPLICATE", "CATEGORY_NAME_DUPLICATE"}:
             field = "body.name"
+        if code == "YEAR_DUPLICATE":
+            field = "body.year"
         response["content"]["application/json"]["examples"][code] = error_example(
             code, field, dimension=dimension
         )
@@ -355,4 +357,13 @@ auto_code 예제로 SMARTPHONE/SMA를 생성하거나 manual_code 예제로 이�
 second_category는 TABLET/TAB을 생성하며 페이지 순회·수정 중복 예제의 사전 조건입니다.
 생성 응답 data.id와 이력 목록 data[].id를 경로에 복사하며 공통 실행 순서는 위 안내를 따릅니다.
 코드는 생략만 자동 생성이며 null·빈 값은422입니다. 실패 예제의 예상 코드와 사전 조건을 확인하세요.
+
+### Year 테스트 준비
+Year는 제품 출시 연도입니다. POST /years에서 {"year": 2024}처럼 정수만 입력하세요.
+1900~2999만 허용하며 code는 입력할 수 없습니다. 수정 시 코드도 연도와 함께 바뀝니다.
+수정 중복 예제는 2024·2025를 먼저 생성한 뒤 2024의 UUID에서 실행합니다.
+Year 목록은 연도 내림차순, 이력은 기록 시각·UUID 내림차순입니다.
+공통 CRUD·이력·cursor 실행 순서는 위 안내를 따릅니다.
+/years/{year_id}/logs와 /year-logs/{log_id}에서 실제 응답 UUID를 사용하세요.
+예제 재실행 전 본인이 만든 해당 연도를 삭제해 정리하세요. 삭제 후 이력은 유지됩니다.
 """

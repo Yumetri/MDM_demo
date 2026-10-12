@@ -11,7 +11,7 @@ from sqlalchemy import inspect, text
 def migrate(connection, revision, *, downgrade=False):
     config = Config("alembic.ini")
     config.attributes["connection"] = connection
-    assert ScriptDirectory.from_config(config).get_heads() == ["0006_category"]
+    assert ScriptDirectory.from_config(config).get_heads() == ["0007_merge_category_year"]
     if downgrade:
         command.downgrade(config, revision)
     else:
@@ -70,7 +70,7 @@ async def test_category_upgrade_from_existing_heads_and_roundtrip(database, init
             await connection.run_sync(lambda conn: migrate(conn, "head"))
             assert (
                 await connection.execute(text("SELECT version_num FROM alembic_version"))
-            ).scalars().all() == ["0006_category"]
+            ).scalars().all() == ["0007_merge_category_year"]
             for name, expected in previous.items():
                 assert (
                     await connection.execute(text(f"SELECT * FROM {name} ORDER BY id"))

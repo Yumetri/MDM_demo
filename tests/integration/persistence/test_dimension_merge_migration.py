@@ -14,7 +14,7 @@ MERGE_REVISION = "0005_merge_brand_country"
 def migrate(connection: Connection, revision: str, *, downgrade: bool = False) -> None:
     config = Config("alembic.ini")
     config.attributes["connection"] = connection
-    assert ScriptDirectory.from_config(config).get_heads() == ["0006_category"]
+    assert ScriptDirectory.from_config(config).get_heads() == ["0007_merge_category_year"]
     if downgrade:
         command.downgrade(config, revision)
     else:

@@ -96,9 +96,9 @@
 - 이번 산출물은 Category 구현·테스트·문서다. 아래 검증 결과와 검증 공백을 구분한다.
 
 
-## 구현·검증 결과 (2026-10-12)
+## 최초 구현·검증 결과 (2026-10-12, main 병합 전)
 
-- Category 전용 마이그레이션 0006_category는 기존 0005_merge_brand_country를 부모로 사용하며 최종 단일 head다. 빈 DB·Brand head·Country head·기준 병합 head에서 업그레이드하고 기존 차원·로그 보존, Category downgrade·재적용, ORM 일치를 검증했다.
+- Category 전용 마이그레이션 0006_category는 기존 0005_merge_brand_country를 부모로 사용하며 최초 구현 당시 단일 head였다. 빈 DB·Brand head·Country head·기준 병합 head에서 업그레이드하고 기존 차원·로그 보존, Category downgrade·재적용, ORM 일치를 검증했다.
 - 기존 병합 마이그레이션 테스트는 검증 대상 0005_merge_brand_country를 명시하도록 수정하고, 최신 head 검증은 Category 마이그레이션 테스트에서 수행한다.
 - Category 실행은 프로젝트 mdm-category-6, 이미지 mdm-category-6-api, 개발 DB mdm_category6, API 8006, PostgreSQL 5436, 프로젝트 전용 영속 볼륨을 사용했다. 실행용 override는 /private/tmp/mdm-category-6.compose.yaml이며 저장소에 포함하지 않았다. 테스트는 같은 프로젝트의 별도 postgres-test 서비스와 mdm_test DB다.
 - make compose-check·make up·make smoke·make check가 통과했다. Ruff·포맷·Pyrefly는 경고 포함 진단이 없다. make test-unit 323개, make test-container 전체 725개가 통과했으며 단위 검사는 전체 검사에 포함된다.
@@ -107,3 +107,14 @@
 - no-op·중복·검증 실패는 로그를 늘리지 않았다. 삭제 로그의 이전 스냅샷·after:null과 변경 요청/조회 요청 ID 분리도 실제 Scalar 응답으로 확인했다.
 - 초기 구현의 단독 surrogate 본문 예제가 OpenAPI 직렬화를 실패시켜 이를 문서 본문에서 제거했다. 거부 동작은 실제 API 테스트에 유지했고 수정 후 전체 725개 테스트와 실제 문서 렌더링이 통과했다.
 - 대량 데이터 성능·실행 계획, 다른 작업의 아직 병합되지 않은 미래 마이그레이션 통합은 미검증이다. 미래 병합 시 원격 상태를 재확인하고 공통 등록·단일 head·회귀를 다시 검증해야 한다.
+
+
+## PR #20 충돌 해결·재검증 (2026-10-12)
+
+- main의 Year 기능(PR #19, c1f94f6)을 병합해 Category·Year의 등록부·오류 예제·fixture·문서·기능 목차를 함께 보존했다. 기존 업무 규칙과 두 차원의 공유된 마이그레이션 파일은 변경하지 않았다.
+- 최종 head는 [0007_merge_category_year](../../migrations/versions/0007_merge_category_year.py)이며 부모는 0006_category·0006_year_dimension이다. 스키마 변경 없이 두 리비전을 연결한다.
+- [병합 테스트](../../tests/integration/persistence/test_category_year_merge_migration.py)로 빈 DB, Category만 적용된 DB, Year만 적용된 DB, 두 부모가 모두 적용된 DB의 업그레이드·기존 행/로그 보존·병합 노드 downgrade/재적용을 확인했다. 기존 Brand·Country 병합 테스트는 해당 리비전을 직접 검사하며 최신 head 검사도 갱신했다.
+- make check의 Ruff·포맷·Pyrefly가 통과했고 make test-unit 347개, make test-container 전체 831개가 통과했다. 전체 검사는 실제 PostgreSQL 마이그레이션·ORM 일치 검사와 기존 차원 API 회귀를 포함한다.
+- 전용 Category Compose 환경에서 make compose-check·make up·make smoke가 통과했다. 기존 Category DB에서 Year 추가·병합 head 적용 후 앱이 정상 기동했다.
+- 실제 Scalar에서 Category·Year 준비 안내와 두 차원·로그 태그가 함께 렌더링됐다. 두 목록의 Test Request→Send 실행은 각각 /categories?limit=1, /years?limit=1로 전송됐고 cursor 생략·200 응답을 확인했다. Category 기본 생성 예제와 요청 코드도 보존됐다.
+- 대량 데이터 성능·아직 main에 병합되지 않은 후속 차원과의 통합은 이번 검증 범위에 포함하지 않는다.

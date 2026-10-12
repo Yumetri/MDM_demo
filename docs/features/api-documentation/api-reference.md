@@ -5,7 +5,7 @@
 - 사용자와 목적: 개발자가 API 명세를 열람하고 Scalar UI에서 요청을 실행한다. 도구는 OpenAPI 스키마를 조회할 수 있다.
 - 처리 결과: 문서 UI의 HTML 또는 OpenAPI JSON을 제공한다.
 - 진입점: Scalar UI `GET /docs`, OpenAPI 스키마 `GET /openapi.json`.
-- API 계약: [API 규약](../../api-conventions.md)은 Company·Model·Brand·Country·Category와 공통 응답·오류 계약을 관리한다. 각 기능의 구현 범위는 해당 기능 문서에서 확인한다.
+- API 계약: [API 규약](../../api-conventions.md)은 Company·Model·Brand·Country·Category·Year와 공통 응답·오류 계약을 관리한다. 각 기능의 구현 범위는 해당 기능 문서에서 확인한다.
 
 ## 업무 규칙과 제약
 
@@ -59,3 +59,6 @@
 | [헬스 체크](../operations/health-check.md) | 문서의 요청·응답 정의를 확인하는 스모크 검사에서 사용 |
 
 [API 문서 목차](README.md)
+
+
+Year·YearLog에도 이름 있는 생성·수정·경로·쿼리·응답 예제를 제공한다. [예제 실행 테스트](../../../tests/api/test_year_openapi_examples.py)는 null·strict 타입·범위·중복·원문 실수 요청과 구체 응답을 확인한다. Scalar의 JavaScript 직렬화로 2024.0이 정수처럼 표시되는 점을 고려해 실행 실수 예제는 2024.5를 사용한다. 실제 브라우저 검수 결과는 [검증 보고](../../reports/issue-7-validation.md)를 따른다.
