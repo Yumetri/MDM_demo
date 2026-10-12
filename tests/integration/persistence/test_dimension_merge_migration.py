@@ -14,7 +14,7 @@ MERGE_REVISION = "0005_merge_brand_country"
 def migrate(connection: Connection, revision: str, *, downgrade: bool = False) -> None:
     config = Config("alembic.ini")
     config.attributes["connection"] = connection
-    assert ScriptDirectory.from_config(config).get_heads() == ["0007_merge_category_year"]
+    assert ScriptDirectory.from_config(config).get_heads() == ["0008_merge_dimension_heads"]
     if downgrade:
         command.downgrade(config, revision)
     else:
@@ -86,7 +86,7 @@ async def test_merge_upgrade_preserves_either_branch_and_existing_logs(database,
                     ).all()
                     assert rows == previous_rows.get(name, [])
             # An explicit parent avoids an ambiguous relative walk at a merge point.
-            # Downgrading the merge itself keeps both parent schemas and all data.
+            # Downgrading the merge keeps both parent schemas and their data.
             await connection.run_sync(lambda conn: migrate(conn, "0004", downgrade=True))
             assert set(
                 (

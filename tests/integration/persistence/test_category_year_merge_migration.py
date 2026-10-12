@@ -15,7 +15,7 @@ def migrate(connection, revision, *, downgrade=False):
     config = Config("alembic.ini")
     config.attributes["connection"] = connection
     script = ScriptDirectory.from_config(config)
-    assert script.get_heads() == [MERGE_REVISION]
+    assert script.get_heads() == ["0008_merge_dimension_heads"]
     head = script.get_revision(MERGE_REVISION)
     assert head is not None and head.down_revision == PARENTS
     if downgrade:
@@ -69,7 +69,7 @@ async def test_category_year_merge_preserves_parent_data_and_logs(database, init
                     previous[name] = (
                         await connection.execute(text(f"SELECT * FROM {name} ORDER BY id"))
                     ).all()
-            await connection.run_sync(lambda conn: migrate(conn, "head"))
+            await connection.run_sync(lambda conn: migrate(conn, MERGE_REVISION))
             assert (
                 await connection.execute(text("SELECT version_num FROM alembic_version"))
             ).scalars().all() == [MERGE_REVISION]
@@ -88,7 +88,7 @@ async def test_category_year_merge_preserves_parent_data_and_logs(database, init
                 assert (
                     await connection.execute(text(f"SELECT * FROM {name} ORDER BY id"))
                 ).all() == rows
-            await connection.run_sync(lambda conn: migrate(conn, "head"))
+            await connection.run_sync(lambda conn: migrate(conn, MERGE_REVISION))
             assert (
                 await connection.execute(text("SELECT version_num FROM alembic_version"))
             ).scalars().all() == [MERGE_REVISION]

@@ -16,6 +16,8 @@ from mdm_demo.infrastructure.persistence.models.country import CountryModel  # n
 from mdm_demo.infrastructure.persistence.models.country_log import CountryLogModel  # noqa: F401
 from mdm_demo.infrastructure.persistence.models.model import ModelModel  # noqa: F401
 from mdm_demo.infrastructure.persistence.models.model_log import ModelLogModel  # noqa: F401
+from mdm_demo.infrastructure.persistence.models.network import NetworkModel  # noqa: F401
+from mdm_demo.infrastructure.persistence.models.network_log import NetworkLogModel  # noqa: F401
 from mdm_demo.infrastructure.persistence.models.year import YearModel  # noqa: F401
 from mdm_demo.infrastructure.persistence.models.year_log import YearLogModel  # noqa: F401
 from mdm_demo.infrastructure.persistence.session import database_url
