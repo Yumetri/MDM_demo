@@ -13,7 +13,7 @@ async def test_year_memory_merge_preserves_each_deployed_head_and_logs(database,
     engine, _ = database
     config = Config("alembic.ini")
     script = ScriptDirectory.from_config(config)
-    assert script.get_heads() == ["0007_merge_year_memory"]
+    assert script.get_heads() == ["0009_merge_memory_dimensions"]
     for revision in ("0006_year_dimension", "0006_memory"):
         node = script.get_revision(revision)
         assert node is not None and node.down_revision == "0005_merge_brand_country"
@@ -70,7 +70,7 @@ async def test_year_memory_merge_preserves_each_deployed_head_and_logs(database,
                 for name in [table, dimension + "_logs"]:
                     before[name] = (await connection.execute(text(f"SELECT * FROM {name}"))).all()
             for _ in range(2):
-                await connection.run_sync(lambda conn: migrate(conn, "head"))
+                await connection.run_sync(lambda conn: migrate(conn, "0007_merge_year_memory"))
                 assert (
                     await connection.execute(text("SELECT version_num FROM alembic_version"))
                 ).scalars().all() == ["0007_merge_year_memory"]

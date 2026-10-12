@@ -13,15 +13,12 @@ async def test_isolated_feature_create_and_log_share_transaction(
     dispose = AsyncMock(wraps=type(database[0]).dispose)
     monkeypatch.setattr(type(database[0]), "dispose", dispose)
     app = app_factory(modules=(module,))
-    collection = (
-        "companies"
-        if module.name == "company"
-        else (
-            "countries"
-            if module.name == "country"
-            else ("memories" if module.name == "memory" else module.name + "s")
-        )
-    )
+    collection = {
+        "company": "companies",
+        "country": "countries",
+        "category": "categories",
+        "memory": "memories",
+    }.get(module.name, module.name + "s")
     async with app.router.lifespan_context(app):
         async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
             if module.name == "memory":

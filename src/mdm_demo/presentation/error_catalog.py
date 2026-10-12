@@ -22,6 +22,10 @@ ERRORS = {
     "CONFLICT": ErrorSpec(409, "현재 상태에서는 요청을 처리할 수 없습니다."),
     "INTERNAL_ERROR": ErrorSpec(500, "요청 처리 중 오류가 발생했습니다."),
     "MEMORY_CAPACITY_DUPLICATE": ErrorSpec(409, "이미 존재하는 저장공간 용량입니다."),
+    "CATEGORY_NAME_DUPLICATE": ErrorSpec(409, "이미 존재하는 분류명입니다."),
+    "CATEGORY_CODE_DUPLICATE": ErrorSpec(409, "이미 존재하는 분류 코드입니다."),
+    "NETWORK_NAME_DUPLICATE": ErrorSpec(409, "이미 존재하는 네트워크 규격명입니다."),
+    "NETWORK_CODE_DUPLICATE": ErrorSpec(409, "이미 존재하는 네트워크 코드입니다."),
     "COUNTRY_NAME_DUPLICATE": ErrorSpec(409, "이미 존재하는 국가명입니다."),
     "COUNTRY_CODE_DUPLICATE": ErrorSpec(409, "이미 존재하는 국가 코드입니다."),
     "BRAND_CODE_DUPLICATE": ErrorSpec(409, "이미 존재하는 브랜드 코드입니다."),
@@ -60,4 +64,8 @@ def error_message(code: str, dimension: str = "company") -> str:
         return "model에서 코드를 자동으로 생성할 수 없습니다. 코드를 직접 입력해 주세요."
     if code == "DIMENSION_AUTO_CODE_UNAVAILABLE" and dimension == "brand":
         return "brand에서 코드를 자동으로 생성할 수 없습니다. 코드를 직접 입력해 주세요."
+    if code == "DIMENSION_AUTO_CODE_UNAVAILABLE" and dimension == "category":
+        return "category에서 코드를 자동으로 생성할 수 없습니다. 코드를 직접 입력해 주세요."
+    if code == "DIMENSION_AUTO_CODE_UNAVAILABLE" and dimension == "network":
+        return "network에서 코드를 자동으로 생성할 수 없습니다. 코드를 직접 입력해 주세요."
     return ERRORS[code].message

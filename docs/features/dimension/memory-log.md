@@ -56,7 +56,7 @@ memory_logs 전용 테이블에 원본 UUID를 FK 없이 저장한다. before/af
 | 단위 | [로그 전용 UoW·cursor](../../../tests/unit/application/test_memory_log.py), [스냅샷 불변성](../../../tests/unit/domain/test_memory.py) |
 | 실제 DB·API | [영속성](../../../tests/integration/persistence/test_memory.py), [이력 조회](../../../tests/api/test_memory_log.py), [OpenAPI 예제](../../../tests/api/test_memory_openapi_examples.py) |
 
-2026-10-12 전체 테스트 838개에서 스냅샷 정수 타입·Mapper 왕복, 로그 실패의 원자성·취소/commit 실패 정리, 추가 전용 보호, 삭제 후 목록·없는 로그·cursor 교차 거부를 검증했다. Scalar에서 표기 변경 전후 값·로그 단건, 동일 값 수정 시 이력 미증가, 삭제 후 원래 UUID의 create/update/delete 이력을 확인했다. 검증 진입점은 [Makefile](../../../Makefile), 실행 전제는 [README](../../../README.md)를 따른다.
+2026-10-12 전체 테스트 1160개에서 스냅샷 정수 타입·Mapper 왕복, 로그 실패의 원자성·취소/commit 실패 정리, 추가 전용 보호, 삭제 후 목록·없는 로그·cursor 교차 거부를 검증했다. Scalar에서 표기 변경 전후 값·로그 단건, 동일 값 수정 시 이력 미증가, 삭제 후 원래 UUID의 create/update/delete 이력을 확인했다. 검증 진입점은 [Makefile](../../../Makefile), 실행 전제는 [README](../../../README.md)를 따른다.
 
 ## 관련 기능
 

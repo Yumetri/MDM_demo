@@ -7,7 +7,7 @@
 ## 기준·선행 변경·병렬 통합
 
 - 담당: 저장공간 용량 차원 CRUD 및 전용 이력 저장·조회, 이슈 #9.
-- 최초 기준: 000b7e1a01e7c9e1c6c74e4026d1ab957d138556. PR 생성 전 main에 병합된 Year(PR #19)를 반영해 origin/main c1f94f6d8f2738cf20a5d29b33b00ef0ed634bf0으로 갱신했다. 공통 등록·문서·테스트에서 Year와 Memory를 모두 보존했다.
+- 최초 기준: 000b7e1a01e7c9e1c6c74e4026d1ab957d138556. PR 생성 전 main에 병합된 Year(PR #19)를 반영해 origin/main c1f94f6d8f2738cf20a5d29b33b00ef0ed634bf0으로 갱신했다. 공통 등록·문서·테스트에서 Year와 Memory를 모두 보존했다. 이후 충돌 해결 요청에 따라 Category·Network가 병합된 main 57a0a4f를 다시 통합했다. 기존 적용 리비전을 보존하고 0009_merge_memory_dimensions로 0008 main head·0007 Memory head를 연결한다.
 - 브랜치: codex/issue-9-memory-dimension.
 - 워크트리: /Users/tagit/.codex/worktrees/issue-9-memory-dimension/MDM_demo.
 - 선행 PR #15(차원별 타입), #16(차원별 UoW), #17(명시적 조립)은 기준에 포함되어 있다. 이 구조를 재사용하며 별도 공통 리팩터링을 전제하지 않는다.
@@ -112,7 +112,7 @@ Memory와 로그 전용 스냅샷 타입에 정수 capacity를 포함한다. 기
 
 ## 리뷰·현재 검증 범위
 
-- Memory와 MemoryLog를 구현하고 정적 검사·Memory 구현 당시 단위 315개·Year 통합 후 실제 PostgreSQL 전체 838개·마이그레이션/ORM 일치·Scalar 요청을 검증했다. 문서 공백·링크·규칙 일관성도 확인한다. 실수 실패 예제의 Scalar 직렬화 P2는 두 독립 검토자가 확인했고, 2026-10-12 사용자가 승인한 범위로 수정했다. POST·PATCH 예제는 256.5를 사용하며 원시 JSON 256.0의 422·데이터/이력 불변 테스트 2개와 실행 안내를 추가했다. 실제 Scalar에서도 두 예제의 256.5 전송·422·원본/시각/이력 불변을 재확인했다.
+- Memory와 MemoryLog를 구현하고 정적 검사·Memory 구현 당시 단위 315개·Year 통합 후 실제 PostgreSQL 전체 1160개·마이그레이션/ORM 일치·Scalar 요청을 검증했다. 문서 공백·링크·규칙 일관성도 확인한다. 실수 실패 예제의 Scalar 직렬화 P2는 두 독립 검토자가 확인했고, 2026-10-12 사용자가 승인한 범위로 수정했다. POST·PATCH 예제는 256.5를 사용하며 원시 JSON 256.0의 422·데이터/이력 불변 테스트 2개와 실행 안내를 추가했다. 실제 Scalar에서도 두 예제의 256.5 전송·422·원본/시각/이력 불변을 재확인했다.
 - README의 Memory 구현 범위·마이그레이션·로그 보존 설명을 갱신했다. 상세 규칙은 기능 문서·API 규약을 참조한다.
 - Year 통합에 따른 기존 Year 마이그레이션 검사는 해당 리비전의 roundtrip을 유지하고 최종 head 확인만 갱신했다. 공통 이전 merge 검사도 해당 노드의 roundtrip을 유지한다. 별도 Year·Memory merge 검사에서 두 선행 head 각각/동시 적용 상태와 기존 로그 보존·merge-only downgrade/재적용을 검증한다.
 - 통합 앱의 make up·make smoke를 통과했고 새 Scalar에서 Year·Memory 안내가 함께 표시됨을 확인했다. Memory 첫 페이지의 생성 코드·실제 요청은 cursor를 생략하고 200을 반환한다.
@@ -120,3 +120,12 @@ Memory와 로그 전용 스냅샷 타입에 정수 capacity를 포함한다. 기
 - 결함 후보가 나오면 같은 패치·증거·요구사항을 별도 읽기 전용 서브에이전트 2개에 주고 병렬 재검토한다. 실재성·조건·영향·반례·수정안·검증 계획과 두 의견의 일치/불일치를 보고하고 수정 방향·범위를 합의한 뒤에만 수정한다.
 - 수정 후 필요한 검사·두 리뷰를 최종 패치에서 다시 수행한다. 미수정 문제 수용 시 잔여 위험·결정을 기록하고 해당 상태의 커밋 승인을 받는다.
 - 리팩터링·커밋·푸시를 수행하지 않았다. 리뷰 완료는 이들 행위의 사전 허가를 대신하지 않는다.
+
+
+## main 충돌 해결 재검증
+
+- 2026-10-12 main 57a0a4f2e4a072fd5ea55208d473475cf9e5dc01(Category PR #20·Network PR #22)을 병합한다. 기존 Memory 커밋 fd67db6을 첫 부모로 보존한다.
+- 8개 차원의 등록·오류·본문 안내·fixture·API 계약·목차를 함께 유지한다. 기존 적용 리비전을 바꾸지 않고 0009_merge_memory_dimensions에서 main의 0008 head와 Memory의 0007 head를 연결한다.
+- 빈 DB·개별 0006/0007/0008 리비전·양쪽 head 동시 적용 등 10개 상태에서 8개 차원의 데이터·이력 보존, merge-only downgrade·재적용을 검증했다. 기존 하위 merge 검사는 해당 리비전의 roundtrip을 유지하고 최신 head 확인만 갱신한다.
+- 첫 실행은 새 테스트의 downgrade 기대값이 이전 부모였던 10개 경우에서 실패했다. 실제 부모로 수정한 뒤 전체 1160개가 통과했다. Ruff·Pyrefly와 make up·make smoke도 통과했다. 새 Scalar에서 모든 차원과 안내가 표시되고 Memory 목록의 실제 요청이 cursor 없이 200을 반환한다.
+- 병합 커밋 전체 변경을 첫 부모 fd67db6 기준으로 고정해 두 필수 리뷰를 수행한다. PR #21의 main 대상은 유지한다.

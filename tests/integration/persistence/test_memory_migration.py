@@ -12,7 +12,7 @@ from sqlalchemy.engine import Connection
 def migrate(connection: Connection, revision: str, *, downgrade: bool = False) -> None:
     config = Config("alembic.ini")
     config.attributes["connection"] = connection
-    assert ScriptDirectory.from_config(config).get_heads() == ["0007_merge_year_memory"]
+    assert ScriptDirectory.from_config(config).get_heads() == ["0009_merge_memory_dimensions"]
     if downgrade:
         command.downgrade(config, revision)
     else:

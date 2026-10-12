@@ -10,8 +10,12 @@
 - [BrandLog](brand-log.md)
 - [Country](country.md)
 - [CountryLog](country-log.md)
+- [Category](category.md)
+- [CategoryLog](category-log.md)
 - [Year](year.md)
 - [YearLog](year-log.md)
+- [Network](network.md)
+- [NetworkLog](network-log.md)
 
 - [Memory](memory.md)
 - [MemoryLog](memory-log.md)

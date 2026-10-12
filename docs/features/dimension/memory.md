@@ -74,7 +74,7 @@ cursor·목록의 일관성 범위는 API 규약을 따른다. 수정으로 정�
 | 실제 DB | [제약·원자성·동시성·정리](../../../tests/integration/persistence/test_memory.py), [마이그레이션 보존·왕복](../../../tests/integration/persistence/test_memory_migration.py) |
 | API | [CRUD·오류](../../../tests/api/test_memory.py), [OpenAPI 예제 실행](../../../tests/api/test_memory_openapi_examples.py) |
 
-2026-10-12 make check(진단 0), Memory 구현 당시 make test-unit(315개), 격리 Compose의 make test-container(838개)를 통과했다. Year(PR #19)가 포함된 최신 main을 반영했다. 빈 DB·각 기존 차원 head에서 업그레이드, 기존 데이터/로그 보존·ORM 일치·최종 단일 head를 확인했다. 0007_merge_year_memory로 Year·Memory head를 연결하고 각각/동시 적용 DB의 데이터·로그 보존과 merge-only downgrade/재적용도 확인했다. make compose-check·make up·make smoke도 통과했다.
+2026-10-12 make check(진단 0), Memory 구현 당시 make test-unit(315개), 격리 Compose의 make test-container(1160개)를 통과했다. Year(PR #19)가 포함된 최신 main을 반영했다. 빈 DB·각 기존 차원 head에서 업그레이드, 기존 데이터/로그 보존·ORM 일치·최종 단일 head를 확인했다. 0007_merge_year_memory로 Year·Memory head를 연결하고 각각/동시 적용 DB의 데이터·로그 보존과 merge-only downgrade/재적용도 확인했다. make compose-check·make up·make smoke도 통과했다.
 
 실제 Scalar에서 정상 생성·단위 정규화·최대 TB, 중복·불리언·코드 입력 오류, 용량 수정·표기 변경·동일 값 수정, 삭제 후 404·이력 보존·재등록 UUID 분리, 로그 단건·실제 cursor 다음 페이지·cursor 오류를 확인했다. 첫 페이지는 생성 코드와 실제 서버 요청 모두 cursor를 생략했다. Scalar가 정수형 실수 256.0을 256으로 직렬화하는 결함은 사용자 승인 후 실패 예제를 256.5로 교체해 해결했다. POST·PATCH 예제의 실제 전송 본문과 422 VALIDATION_ERROR, 데이터·시각·이력 불변을 다시 확인했다. 원시 JSON 256.0 거부는 별도 API 테스트 2개로 보존하며 문서 상단의 원시 HTTP 안내를 따른다.
 
@@ -84,3 +84,8 @@ cursor·목록의 일관성 범위는 API 규약을 따른다. 수정으로 정�
 
 - [MemoryLog](memory-log.md)
 - [Dimension 목차](README.md)
+
+
+### main 충돌 해결 후 통합
+
+Category·Network가 포함된 main을 반영하고 [0009 병합](../../../migrations/versions/0009_merge_memory_dimensions.py)으로 최신 단일 head를 구성했다. 기존 Memory·Year·Category·Network 리비전의 ID·부모·내용은 유지한다. [통합 보존 검사](../../../tests/integration/persistence/test_memory_main_merge_migration.py)는 10개 초기 상태에서 8개 차원의 데이터·이력 보존, merge-only downgrade·재적용을 확인한다. 최종 전체 테스트 1160개·정적 검사·make up·make smoke를 통과했다. 새 Scalar에서 모든 차원과 안내가 표시되고 Memory 첫 페이지의 생성 코드·실제 요청은 cursor 없이 200을 반환한다.

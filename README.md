@@ -1,8 +1,8 @@
 # MDM backend foundation
 
 uv 기반 비동기 FastAPI·SQLAlchemy 백엔드 프로젝트. PostgreSQL·Redis를 Docker Compose로 실행한다.
-실행 환경·헬스 체크·Scalar API 문서와 Company·Model·Brand·Country·Year·Memory CRUD·CompanyLog·ModelLog·BrandLog·CountryLog·YearLog·MemoryLog를 구현했다.
-Company·Model·Brand·Country·Year·Memory와 변경 이력 조회는 PostgreSQL을 사용하며 인증·권한·차원 캐시는 포함하지 않는다.
+실행 환경·헬스 체크·Scalar API 문서와 Company·Model·Brand·Country·Category·Year·Network·Memory CRUD·CompanyLog·ModelLog·BrandLog·CountryLog·CategoryLog·YearLog·NetworkLog·MemoryLog를 구현했다.
+Company·Model·Brand·Country·Category·Year·Network·Memory와 변경 이력 조회는 PostgreSQL을 사용하며 인증·권한·차원 캐시는 포함하지 않는다.
 
 ## 실행
 
@@ -21,10 +21,12 @@ Company CRUD는 `/companies`, Model CRUD는 `/models`에서 제공하며 구체�
 모델별 이력은 `/models/{model_id}/logs`, 로그 단건은 `/model-logs/{log_id}`에서 동일하게 조회한다.
 Brand CRUD는 `/brands`, 이력 목록은 `/brands/{brand_id}/logs`, 로그 단건은 `/brand-logs/{log_id}`에서 제공한다. Brand는 Company·Model과 독립된 차원이며 [Brand](docs/features/dimension/brand.md)·[BrandLog](docs/features/dimension/brand-log.md)의 규칙을 따른다.
 Country CRUD는 `/countries`, 국가별 이력은 `/countries/{country_id}/logs`, 로그 단건은 `/country-logs/{log_id}`에서 제공한다. Country는 국가명을 공백 제거·대문자·NFC 정규화 후 유일하게 저장하며, 영문 3자 코드를 직접 입력해야 한다. 자동 생성은 제공하지 않는다. 세부 규칙은 [Country](docs/features/dimension/country.md)·[CountryLog](docs/features/dimension/country-log.md)를 따른다.
+Category CRUD는 `/categories`, 분류별 이력은 `/categories/{category_id}/logs`, 로그 단건은 `/category-logs/{log_id}`에서 제공한다. 이름은 공백 제거·대문자·NFC 정규화 후 유일하며 코드는 영문·숫자 3자로 직접 입력하거나 이름에서 자동 생성한다. 코드 변경은 금지하며 삭제 후에도 이력을 보존한다. [Category](docs/features/dimension/category.md)·[CategoryLog](docs/features/dimension/category-log.md)를 따른다.
 Year CRUD는 `/years`, 대상별 이력은 `/years/{year_id}/logs`, 로그 단건은 `/year-logs/{log_id}`에서 제공한다. 제품 출시 연도를 JSON 정수로 입력하면 코드를 자동 생성하며 수정 시 코드도 함께 바뀐다. 목록과 이력은 내림차순이다. 구체 규칙은 [Year](docs/features/dimension/year.md)·[YearLog](docs/features/dimension/year-log.md), HTTP 계약은 [API 규약](docs/api-conventions.md#yearyearlog-http-계약)을 따른다.
+Network CRUD는 `/networks`, 규격별 이력은 `/networks/{network_id}/logs`, 로그 단건은 `/network-logs/{log_id}`에서 제공한다. 이름은 trim·대문자·NFC 후 유일하고 코드는 ASCII 영문·숫자 1~20자다. 코드 생략 시 이름의 해당 문자를 모두 추출하며 규격·이력 목록은 최신순으로 조회한다. 상세 규칙은 [Network](docs/features/dimension/network.md)·[NetworkLog](docs/features/dimension/network-log.md), HTTP 계약은 API 규약을 따른다.
 Memory CRUD는 `/memories`, 저장공간별 이력은 `/memories/{memory_id}/logs`, 로그 단건은 `/memory-logs/{log_id}`에서 제공한다. 용량과 단위를 분리하고 코드는 항상 자동 생성한다. `1TB`와 `1000GB`는 같은 용량으로 중복을 금지하며, 수정 시 코드도 갱신한다. 세부 규칙은 [Memory](docs/features/dimension/memory.md)·[MemoryLog](docs/features/dimension/memory-log.md)를 따른다.
 `make up`은 PostgreSQL 준비 → 일회성 `migrate` 서비스의 Alembic 적용 → API 시작 순서로 실행한다. 마이그레이션 실패 시 API 시작을 막는다.
-`0005_merge_brand_country`는 기존 Brand(`0004`)·Country(`0004_country`) 리비전을 연결한다. `0006_year_dimension`·`0006_memory`는 그 뒤에 Year·Memory를 각각 추가하고, 최신 `0007_merge_year_memory`는 두 차원의 리비전을 연결한다. 어느 선행 head가 적용된 DB도 `make up`으로 빠진 차원을 추가하며 기존 데이터·이력을 보존한다. Memory의 GB 환산 용량은 DB 생성 컬럼으로 관리한다.
+`0005_merge_brand_country` 뒤에 Category·Year·Network·Memory가 각각 추가된다. 기존 `0007_merge_category_year`·`0007_merge_network_year`·`0007_merge_year_memory`와 `0008_merge_dimension_heads`를 보존하며, 최신 `0009_merge_memory_dimensions`가 main의 차원 head와 Memory head를 연결한다. 어느 선행 head가 적용된 DB도 `make up`으로 빠진 차원을 추가하며 기존 데이터·이력을 보존한다. Memory의 GB 환산 용량은 DB 생성 컬럼으로 관리한다.
 
 주소는 기본 포트 기준이다. 소스 변경 후 `make up`을 다시 실행하면 이미지를 재빌드한다.
 
@@ -64,10 +66,31 @@ PostgreSQL 포트는 로컬 루프백에만 공개한다. `.env`에서 DB 이름
 
 컨테이너 내부 원시 진입점은 `make migrate`, `make migration-check`, `make test`이며 일반 실행은 위 컨테이너 명령을 사용한다. 테스트는 pytest·pytest-asyncio·HTTPX를 사용한다. Alembic은 런타임 마이그레이션 도구이며 패키지 버전은 설정·잠금 파일에서 관리한다.
 
+### Network 티켓 전용 검수 환경
+
+[compose.network-test.yaml](compose.network-test.yaml)은 Network 작업의 이미지 태그와 PostgreSQL 호스트 포트를 분리하는 선택적 override다. 일반 실행은 기존 `make up`을 유지한다. 병렬 작업 시 먼저 아래 환경변수를 같은 터미널에 설정한 뒤 기존 Makefile 명령을 사용한다.
+
+```sh
+export COMPOSE_PROJECT_NAME=mdm-network-8
+export COMPOSE_FILE=compose.yaml:compose.network-test.yaml
+export API_PORT=18008
+export POSTGRES_DB=mdm_network_8
+export POSTGRES_USER=mdm_network_8
+export POSTGRES_PASSWORD=network-local-only
+make compose-check
+make up
+make smoke
+make test-container
+```
+
+위 암호는 해당 로컬 검수 환경의 기본값이다. API는 [18008의 Scalar](http://127.0.0.1:18008/docs), PostgreSQL은 `127.0.0.1:15438`, 이미지 태그는 `mdm-network-8-api`를 사용한다. 개발 데이터는 `mdm-network-8_postgres-data` 볼륨에 남으며 `make down`으로 제거되지 않는다. 테스트는 같은 프로젝트의 별도 `mdm_test` DB·tmpfs 서비스를 사용하고 `make test-stop`으로 임시 데이터를 폐기한다. 종료 명령에도 위 환경변수를 유지해 다른 작업의 자원을 건드리지 않는다.
+
+Network 마이그레이션 `0006_network`는 기존 병합 head 뒤에서 Network 테이블·이력·제약·트리거만 추가한다. 기존 네 차원의 데이터·이력을 보존하며 초기 규격을 삽입하지 않는다. Network 리비전의 downgrade는 Network 데이터·이력을 제거하므로 보존할 데이터가 있으면 먼저 백업한다.
+
 ## 설정
 
 포트나 DB 설정을 바꾸려면 [.env.example](.env.example)을 `.env`로 복사해 수정한다. 기본 자격증명은 로컬 개발 전용이다.
-PostgreSQL은 볼륨에 데이터를 보존하며, 기존 볼륨의 DB 계정·암호는 `.env` 수정만으로 바뀌지 않는다. Redis 캐시는 영속화하지 않는다. Company·Model·Brand·Country·Year·Memory 삭제는 물리 삭제지만 전용 `company_logs`·`model_logs`·`brand_logs`·`country_logs`·`year_logs`·`memory_logs`에 원본 UUID를 FK 없이 보존하며 이력은 자동 만료하지 않는다.
+PostgreSQL은 볼륨에 데이터를 보존하며, 기존 볼륨의 DB 계정·암호는 `.env` 수정만으로 바뀌지 않는다. Redis 캐시는 영속화하지 않는다. Company·Model·Brand·Country·Category·Year·Network·Memory 삭제는 물리 삭제지만 전용 `company_logs`·`model_logs`·`brand_logs`·`country_logs`·`category_logs`·`year_logs`·`network_logs`·`memory_logs`에 원본 UUID를 FK 없이 보존하며 이력은 자동 만료하지 않는다.
 `CURSOR_SIGNING_KEY`는 최소 32바이트이며 직접 앱을 실행할 때 반드시 설정한다. Compose에는 로컬 개발용 기본값이 있고 키 교체 시 기존 cursor는 무효화된다.
 
 | 파일 | 관리 대상 |
@@ -77,7 +100,7 @@ PostgreSQL은 볼륨에 데이터를 보존하며, 기존 볼륨의 DB 계정·�
 | [uv.lock](uv.lock) | 전체 Python 의존성 잠금 |
 | [Dockerfile](Dockerfile) | uv 버전·앱 이미지 구성 |
 | [compose.yaml](compose.yaml) | 서비스 설정·PostgreSQL 및 Redis 이미지 버전 |
-| [alembic.ini](alembic.ini), [초기 스키마](migrations/versions/0001_company_dimension.py)·[Company 로그 분리](migrations/versions/0002_split_company_logs.py)·[Model 추가](migrations/versions/0003_model_dimension.py)·[Brand 추가](migrations/versions/0004_brand_dimension.py)·[Country 추가](migrations/versions/0004_country_dimension.py)·[Brand·Country 병합](migrations/versions/0005_merge_brand_country.py)·[Year 추가](migrations/versions/0006_year_dimension.py)·[Memory 추가](migrations/versions/0006_memory_dimension.py)·[Year·Memory 병합](migrations/versions/0007_merge_year_memory.py) | DB 마이그레이션 설정·스키마 이력 |
+| [alembic.ini](alembic.ini), [초기 스키마](migrations/versions/0001_company_dimension.py)·[Company 로그 분리](migrations/versions/0002_split_company_logs.py)·[Model 추가](migrations/versions/0003_model_dimension.py)·[Brand 추가](migrations/versions/0004_brand_dimension.py)·[Country 추가](migrations/versions/0004_country_dimension.py)·[Brand·Country 병합](migrations/versions/0005_merge_brand_country.py)·[Category 추가](migrations/versions/0006_category_dimension.py)·[Year 추가](migrations/versions/0006_year_dimension.py)·[Category·Year 병합](migrations/versions/0007_merge_category_year.py)·[Network 추가](migrations/versions/0006_network_dimension.py)·[Network·Year 병합](migrations/versions/0007_merge_network_year.py)·[최종 차원 head 병합](migrations/versions/0008_merge_dimension_heads.py)·[Memory 추가](migrations/versions/0006_memory_dimension.py)·[Year·Memory 병합](migrations/versions/0007_merge_year_memory.py)·[Memory와 main 차원 병합](migrations/versions/0009_merge_memory_dimensions.py) | DB 마이그레이션 설정·스키마 이력 |
 | [app.py](src/mdm_demo/app.py) | Scalar 번들 버전 |
 
 ## 관련 문서

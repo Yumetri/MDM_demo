@@ -1,6 +1,6 @@
 # API 응답·오류·페이지네이션 규약
 
-Company·Model·Brand·Country·Year 구현에 사용하는 계약을 확정했다. 인증·권한 및 다른 차원의 상세 계약은 이번 구현 범위 밖이다. 공통 카탈로그의 인증 오류는 프레임워크 오류 변환을 위한 정의이며 인증 기능 구현을 의미하지 않는다.
+Company·Model·Brand·Country·Year·Network 구현에 사용하는 계약을 확정했다. 인증·권한 및 다른 차원의 상세 계약은 이번 구현 범위 밖이다. 공통 카탈로그의 인증 오류는 프레임워크 오류 변환을 위한 정의이며 인증 기능 구현을 의미하지 않는다.
 
 ## 성공 응답
 
@@ -241,6 +241,55 @@ Country는 코드 자동 생성 기능이 없으므로 자동 생성 전용 오�
 - PATCH는 name만 받으며 정규화된 이름이 같으면 수정 시각·로그를 변경하지 않는다. 물리 삭제 후 이름·코드 재사용은 새 UUID로 처리한다.
 - [Country 예제 원본](../src/mdm_demo/presentation/schemas/country_examples.py)과 [예제 실행 테스트](../tests/api/test_country_openapi_examples.py)로 정상·실패·경계값을 검증한다.
 
+## Category HTTP 계약
+
+2026-10-12 사용자와 합의한 계약을 Category 런타임·OpenAPI·오류 카탈로그·테스트에 반영했다. 업무 규칙은 [Category](features/dimension/category.md), 로그 보존·스냅샷 범위는 [CategoryLog](features/dimension/category-log.md), 구현 계획은 [6번 계획](plans/issue-6-category.md)을 따른다.
+
+| 메서드·경로 | 입력 | 성공 |
+| --- | --- | --- |
+| POST `/categories` | 문자열 name 필수, 문자열 code 생략 가능 | 201 단건 |
+| GET `/categories` | 선택적 cursor·limit | 200 목록 |
+| GET `/categories/{category_id}` | Category UUID | 200 단건 |
+| PATCH `/categories/{category_id}` | 문자열 name 필수 | 200 단건 |
+| DELETE `/categories/{category_id}` | Category UUID | 204, 본문 없음 |
+| GET `/categories/{category_id}/logs` | 원래 Category UUID, 선택적 cursor·limit | 200 이력 목록 |
+| GET `/category-logs/{log_id}` | 로그 UUID | 200 이력 단건 |
+
+- Category 응답은 id/name/code/created_at/updated_at, 로그 응답은 id/category_id/operation/occurred_at/request_id/before/after다. UUID v4·UTC 시각과 공통 data/meta 응답을 재사용한다.
+- 로그의 request_id는 변경 당시 서버 발급 요청 ID, meta.request_id는 현재 조회 요청 ID다. before/after는 id/name/code 스냅샷이며 생성 전·삭제 후에는 null이다.
+- name은 필수 문자열이다. 코드 자동 생성은 필드 생략에만 적용한다. 명시적 null·빈 문자열·공백만 있는 값·잘못된 타입·알 수 없는 JSON 필드는 422 VALIDATION_ERROR다.
+- PATCH는 name만 받으며 code 입력·빈 객체·알 수 없는 필드는 422다. 정규화 후 이름이 같으면 200을 반환하고 데이터·updated_at·로그를 유지한다.
+- 없는 Category의 단건 조회·수정·삭제, 삭제 후 조회·재삭제, 없는 로그 단건은 기존 공통 계약처럼 404 NOT_FOUND다. 잘못된 UUID 형식은 422다.
+- 이력 목록은 현재 Category 존재를 검사하지 않는다. 기록 없는 UUID는 200 빈 목록이며 삭제한 Category의 기록도 조회한다.
+- Category 목록은 (created_at ASC, id ASC), 이력은 (occurred_at ASC, id ASC)로 정렬한다. limit 기본 20, 범위 1~100이며 범위 위반은 422다.
+- 첫 페이지에는 cursor를 생략한다. 다음 페이지는 같은 목록 응답의 meta.page.next_cursor를 사용한다. 같은 목록에서 limit 변경은 허용한다.
+- 기존 공통 HMAC cursor 계약을 적용한다. 빈 값·잘못된 형식·변조·다른 차원/목록/대상 이력 cursor는 400 INVALID_CURSOR다. 키 교체 시 기존 cursor가 무효화되며 만료 시각은 없다.
+- 검색·사용자 지정 정렬·총 개수는 제공하지 않는다. 기존 차원과 같이 정의하지 않은 query 파라미터는 무시한다. 순회 중 스냅샷 일관성·실제 commit 순서는 보장하지 않는다.
+- 오류 details의 필드는 name에 body.name, code에 body.code를 사용한다. 기존 공통 검증·cursor·없는 대상·내부 오류 계약과 입력·내부 정보 비노출 원칙을 재사용한다.
+
+### Category 중복·자동 생성 오류
+
+아래 코드·상태·문구와 동시 중복 우선순위 없음은 최종 계획에서 합의했다. 공통 자동 생성 메시지는 기존 계약을 그대로 재사용한다.
+
+| 조건 | 코드 | HTTP | 기본 메시지 |
+| --- | --- | --- | --- |
+| 정규화된 이름 중복 | `CATEGORY_NAME_DUPLICATE` | 409 | 이미 존재하는 분류명입니다. |
+| 직접 입력한 코드 중복 | `CATEGORY_CODE_DUPLICATE` | 409 | 이미 존재하는 분류 코드입니다. |
+| 자동 생성한 코드 중복 | `DIMENSION_AUTO_CODE_DUPLICATE` | 409 | 기존 공통 카탈로그 메시지 |
+| 자동 생성에 필요한 영문·숫자 부족 | `DIMENSION_AUTO_CODE_UNAVAILABLE` | 422 | 기존 공통 메시지의 {dimension}에 category 사용 |
+
+- 이름과 코드가 동시에 중복이면 DB가 보고한 알려진 제약에 해당하는 오류 하나를 반환하며 우선순위를 보장하지 않는다.
+- 코드 중복은 자동 생성 여부에 따라 위 두 오류를 구분한다. Category 생성·이름 수정의 알려진 UNIQUE 제약만 해당 중복으로 변환하고 예상하지 못한 DB 오류는 공통 INTERNAL_ERROR로 처리한다.
+
+### Category OpenAPI 구현·검증
+
+- 생성·수정 본문, 경로 UUID·로그 UUID, limit에 이름 있는 예제를 제공한다. 예제마다 예상 상태·오류 코드·사전 조건을 적는다.
+- 입력 생략/null/빈 값/공백/타입·길이·코드 형식, 정규화된 이름 중복, 직접/자동 코드 중복·자동 생성 불가, 없는 대상·no-op·삭제 후 조회, cursor·limit 경계를 포함한다.
+- 두 항목으로 같은 이름 중복만 발생시키는 예제는 서로 다른 유효 코드를 사용한다. 코드 중복만 검사할 때에는 서로 다른 정규화 이름을 사용해 동시 중복의 우선순위 없음에 의존하지 않는다.
+- 정상 UUID·서명 cursor는 실제 생성/목록 응답에서 복사하며 고정 UUID 존재를 가정하지 않는다. 중복 예제는 사전 생성·정리 절차를 안내하고 DELETE 204에는 본문 예제를 만들지 않는다.
+- 공통 실행 순서는 문서 상단에서 한 번만 안내한다. 첫 페이지 cursor에 실패 예제를 자동 입력하지 않고 수동 실행 방법만 설명한다.
+- OpenAPI에서 추출한 실제 요청 예제를 API 테스트로 실행하고 실제 Scalar에서 예제 선택·요청 실행, 첫 페이지 생성 코드와 전송 요청의 cursor 생략을 확인한다.
+- [Category 예제 원본](../src/mdm_demo/presentation/schemas/category_examples.py)과 [예제 실행 테스트](../tests/api/test_category_openapi_examples.py)로 요청 예제·null 보존·구체 응답·중복 오류를 검증했다. 실제 Scalar 실행 결과는 [작업 계획](plans/issue-6-category.md)에 기록했다. 단독 surrogate는 문서 JSON에 넣지 않고 실제 API 테스트에서 JSON escape 입력의 거부를 검증한다.
 
 ## Year·YearLog HTTP 계약
 
@@ -332,3 +381,52 @@ Country는 코드 자동 생성 기능이 없으므로 자동 생성 전용 오�
 - 총 개수·순회 중 스냅샷 일관성·실제 commit 순서는 보장하지 않는다. 검색·필터·사용자 지정 정렬은 제공하지 않으며 알 수 없는 query는 기존 차원처럼 무시한다.
 - 인증·권한·캐시는 합의한 범위에서 제외한다. 기존 공통 방식처럼 멱등성 키·자동 재시도·행위자·자동 이력 만료는 추가하지 않는다.
 - OpenAPI 이름 있는 예제에 생성·수정·단건·목록·삭제·이력, 타입/범위/단위/필수 필드 오류, GB/TB 동치 중복·중복 수정, no-op·표기 변경·삭제 후 조회를 포함한다. 실제 UUID·cursor의 복사 순서와 상태 의존 예제의 준비·정리를 안내한다. 204는 본문 예제가 없고 선택적 cursor는 기본 예제로 자동 입력하지 않는다.
+## Network·NetworkLog HTTP 계약
+
+이슈 #8에서 업무 규칙·공통 HTTP 표현·오류 메시지·운영 기본 정책을 사용자와 합의하고 런타임 오류 카탈로그·OpenAPI·API·테스트에 반영했다.
+업무 명세는 [Network](features/dimension/network.md)·[NetworkLog](features/dimension/network-log.md)를 따른다. Company·Model·Brand·Country의 오름차순과 Year의 내림차순 계약은 변경하지 않는다.
+
+| 메서드·경로 | 입력 | 성공 |
+| --- | --- | --- |
+| POST `/networks` | JSON name 필수, code 생략 가능 | 201 단건 |
+| GET `/networks` | 선택 cursor·limit | 200 목록 |
+| GET `/networks/{network_id}` | Network UUID | 200 단건 |
+| PATCH `/networks/{network_id}` | JSON name 필수 | 200 단건 |
+| DELETE `/networks/{network_id}` | Network UUID | 204 본문 없음 |
+| GET `/networks/{network_id}/logs` | Network UUID, 선택 cursor·limit | 200 이력 목록 |
+| GET `/network-logs/{log_id}` | 로그 UUID | 200 이력 단건 |
+
+### 합의한 입력·동작의 HTTP 계약
+
+- 단건 필드는 id/name/code/created_at/updated_at. UUID v4·UTC·공통 envelope·서버 request ID 정책을 유지한다.
+- name은 문자열이며 strip → upper → NFC 후 1~100자, 내부 공백·한글·숫자·기호를 보존하고 정규화한 이름은 유일하다. 길이는 변환 후 판단한다. NUL·단독 surrogate는 기존 차원처럼 422로 거부한다.
+- 직접 code는 strip 후 ASCII 영문·숫자 1~20자로 검증하고 대문자로 저장한다. name의 ASCII 영문·숫자 전체 추출로 자동 생성하며 0자·20자 초과·코드 중복은 실패한다. 잘라내거나 접미사를 붙이지 않는다.
+- code 필드 생략만 자동 생성이다. 명시 null·빈값·공백만 있는 값·비문자열·내부 공백·기호는 422다. 알 수 없는 JSON 필드, PATCH의 code·빈 객체도 422다.
+- PATCH는 name만 변경하며 code는 유지한다. 정규화한 동일 이름 수정은 200이고 데이터·수정 시각·이력 변경이 없다. 수정 이름도 유일성 검사한다.
+- 삭제한 이름·코드를 재사용할 수 있으며 새 UUID를 발급한다. 없는 대상·삭제 후 조회·재삭제는 404, 잘못된 UUID 형식은 422다.
+- 이력 응답은 id/network_id/operation/occurred_at/request_id/before/after다. create/update/delete와 전체 id/name/code 스냅샷을 반환하며 생성 전·삭제 후는 null이다. 로그 request_id는 변경 당시 요청, meta.request_id는 현재 조회다.
+- 대상별 이력은 원본 존재를 확인하지 않고 삭제된 대상도 조회한다. 기록 없는 UUID는 200 빈 목록, 없는 로그 단건은 404다.
+- 이력 직접 생성·수정·삭제 API·통합 이력 검색은 제공하지 않으며 자동 만료·행위자 필드를 추가하지 않는다.
+
+### 합의한 최신순 조회와 cursor 계약
+
+- Network 목록 `(created_at DESC, id DESC)`, 이력 목록 `(occurred_at DESC, id DESC)`, 기본 20개·허용 1~100개다. 검색·필터·선택 정렬·총 개수는 제공하지 않는다.
+- 다음 페이지는 이전 페이지 마지막 시각·UUID보다 작은 키를 조회한다. 동률은 UUID로 구분한다. 이름 수정은 Network의 목록 위치를 바꾸지 않는다.
+- HMAC 서명·길이·정규 인코딩 검증을 기존 방식으로 유지하되 조회 식별자에 Network 및 내림차순을 포함한다. 로그 cursor는 Network UUID에도 묶는다. 다른 목록·차원·대상·정렬의 토큰은 INVALID_CURSOR/400이다. 동일 목록의 limit 변경은 허용한다.
+- 첫 페이지는 cursor를 생략한다. 동적 cursor는 실제 응답의 meta.page.next_cursor에서 복사한다. cursor 오류 예제는 기본 요청에 자동 입력하지 않고 설명에서 수동 입력을 안내한다.
+- 공통 빈/마지막 페이지 응답을 유지하며 총 개수·스냅샷 일관성을 보장하지 않는다. 순회 중 경계보다 최신인 삽입은 이미 지나간 범위라 누락될 수 있고 삭제한 항목은 사라진다. 실제 commit 순서를 보장하지 않는다.
+
+### 합의한 오류 카탈로그
+
+| 조건 | 코드 | HTTP | 기본 메시지 |
+| --- | --- | --- | --- |
+| 생성·수정의 이름 중복 | NETWORK_NAME_DUPLICATE | 409 | 이미 존재하는 네트워크 규격명입니다. |
+| 직접 코드 중복 | NETWORK_CODE_DUPLICATE | 409 | 이미 존재하는 네트워크 코드입니다. |
+| 자동 코드 중복 | DIMENSION_AUTO_CODE_DUPLICATE | 409 | 자동 생성된 코드가 이미 존재합니다. 코드를 직접 입력해 주세요. |
+| 자동 추출 결과 없음·20자 초과 | DIMENSION_AUTO_CODE_UNAVAILABLE | 422 | network에서 코드를 자동으로 생성할 수 없습니다. 코드를 직접 입력해 주세요. |
+
+입력·없는 대상·cursor·내부 오류는 기존 공통 오류 카탈로그를 따른다. details.field는 해당 body.name/body.code/query.limit/path 필드를 사용한다. 알려진 이름·코드 UNIQUE 위반만 중복으로 변환한다. 둘 다 중복인 경우 어느 오류가 먼저 반환되는지는 별도 우선순위를 보장하지 않는다.
+정의하지 않은 query 파라미터는 기존 차원처럼 무시하며 조회 조건으로 사용하지 않는다. 멱등성 키·자동 재시도·commit 응답 유실 복구는 제공하지 않는다.
+
+
+Network의 [실행 예제](../src/mdm_demo/presentation/schemas/network_examples.py)에는 31개 생성·14개 수정 본문과 경로·limit·응답 예제를 제공한다. [예제 실행 검사](../tests/api/test_network_openapi_examples.py)는 스키마에서 꺼낸 예제를 실제 요청으로 실행하고 응답 모델·null·cursor 기본 생략·공통 테스트 안내를 검증한다. 실제 Scalar 검수 범위는 [Network](features/dimension/network.md)와 [검수 결과](plans/issue-8-network-dimension.md#구현검수-결과)를 따른다.

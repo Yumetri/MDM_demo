@@ -8,6 +8,8 @@ from sqlalchemy.ext.asyncio import create_async_engine
 from mdm_demo.infrastructure.persistence.models.base import Base
 from mdm_demo.infrastructure.persistence.models.brand import BrandModel  # noqa: F401
 from mdm_demo.infrastructure.persistence.models.brand_log import BrandLogModel  # noqa: F401
+from mdm_demo.infrastructure.persistence.models.category import CategoryModel  # noqa: F401
+from mdm_demo.infrastructure.persistence.models.category_log import CategoryLogModel  # noqa: F401
 from mdm_demo.infrastructure.persistence.models.company import CompanyModel  # noqa: F401
 from mdm_demo.infrastructure.persistence.models.company_log import CompanyLogModel  # noqa: F401
 from mdm_demo.infrastructure.persistence.models.country import CountryModel  # noqa: F401
@@ -16,6 +18,8 @@ from mdm_demo.infrastructure.persistence.models.memory import MemoryModel  # noq
 from mdm_demo.infrastructure.persistence.models.memory_log import MemoryLogModel  # noqa: F401
 from mdm_demo.infrastructure.persistence.models.model import ModelModel  # noqa: F401
 from mdm_demo.infrastructure.persistence.models.model_log import ModelLogModel  # noqa: F401
+from mdm_demo.infrastructure.persistence.models.network import NetworkModel  # noqa: F401
+from mdm_demo.infrastructure.persistence.models.network_log import NetworkLogModel  # noqa: F401
 from mdm_demo.infrastructure.persistence.models.year import YearModel  # noqa: F401
 from mdm_demo.infrastructure.persistence.models.year_log import YearLogModel  # noqa: F401
 from mdm_demo.infrastructure.persistence.session import database_url

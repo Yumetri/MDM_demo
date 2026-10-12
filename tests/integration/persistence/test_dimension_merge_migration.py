@@ -9,7 +9,7 @@ from sqlalchemy import inspect, text
 from sqlalchemy.engine import Connection
 
 MERGE_REVISION = "0005_merge_brand_country"
-LATEST_REVISION = "0007_merge_year_memory"
+LATEST_REVISION = "0009_merge_memory_dimensions"
 
 
 def migrate(connection: Connection, revision: str, *, downgrade: bool = False) -> None:
@@ -18,7 +18,10 @@ def migrate(connection: Connection, revision: str, *, downgrade: bool = False) -
     script = ScriptDirectory.from_config(config)
     assert script.get_heads() == [LATEST_REVISION]
     head = script.get_revision(LATEST_REVISION)
-    assert head is not None and head.down_revision == ("0006_year_dimension", "0006_memory")
+    assert head is not None and head.down_revision == (
+        "0008_merge_dimension_heads",
+        "0007_merge_year_memory",
+    )
     if downgrade:
         command.downgrade(config, revision)
     else:
@@ -90,7 +93,7 @@ async def test_merge_upgrade_preserves_either_branch_and_existing_logs(database,
                     ).all()
                     assert rows == previous_rows.get(name, [])
             # An explicit parent avoids an ambiguous relative walk at a merge point.
-            # Downgrading the merge itself keeps both parent schemas and all data.
+            # Downgrading the merge keeps both parent schemas and their data.
             await connection.run_sync(lambda conn: migrate(conn, "0004", downgrade=True))
             assert set(
                 (
