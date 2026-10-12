@@ -1,8 +1,8 @@
 # MDM backend foundation
 
 uv 기반 비동기 FastAPI·SQLAlchemy 백엔드 프로젝트. PostgreSQL·Redis를 Docker Compose로 실행한다.
-실행 환경·헬스 체크·Scalar API 문서와 Company·Model·Brand·Country·Year CRUD·CompanyLog·ModelLog·BrandLog·CountryLog·YearLog를 구현했다.
-Company·Model·Brand·Country·Year와 변경 이력 조회는 PostgreSQL을 사용하며 인증·권한·차원 캐시는 포함하지 않는다.
+실행 환경·헬스 체크·Scalar API 문서와 Company·Model·Brand·Country·Year·Memory CRUD·CompanyLog·ModelLog·BrandLog·CountryLog·YearLog·MemoryLog를 구현했다.
+Company·Model·Brand·Country·Year·Memory와 변경 이력 조회는 PostgreSQL을 사용하며 인증·권한·차원 캐시는 포함하지 않는다.
 
 ## 실행
 
@@ -22,8 +22,9 @@ Company CRUD는 `/companies`, Model CRUD는 `/models`에서 제공하며 구체�
 Brand CRUD는 `/brands`, 이력 목록은 `/brands/{brand_id}/logs`, 로그 단건은 `/brand-logs/{log_id}`에서 제공한다. Brand는 Company·Model과 독립된 차원이며 [Brand](docs/features/dimension/brand.md)·[BrandLog](docs/features/dimension/brand-log.md)의 규칙을 따른다.
 Country CRUD는 `/countries`, 국가별 이력은 `/countries/{country_id}/logs`, 로그 단건은 `/country-logs/{log_id}`에서 제공한다. Country는 국가명을 공백 제거·대문자·NFC 정규화 후 유일하게 저장하며, 영문 3자 코드를 직접 입력해야 한다. 자동 생성은 제공하지 않는다. 세부 규칙은 [Country](docs/features/dimension/country.md)·[CountryLog](docs/features/dimension/country-log.md)를 따른다.
 Year CRUD는 `/years`, 대상별 이력은 `/years/{year_id}/logs`, 로그 단건은 `/year-logs/{log_id}`에서 제공한다. 제품 출시 연도를 JSON 정수로 입력하면 코드를 자동 생성하며 수정 시 코드도 함께 바뀐다. 목록과 이력은 내림차순이다. 구체 규칙은 [Year](docs/features/dimension/year.md)·[YearLog](docs/features/dimension/year-log.md), HTTP 계약은 [API 규약](docs/api-conventions.md#yearyearlog-http-계약)을 따른다.
+Memory CRUD는 `/memories`, 저장공간별 이력은 `/memories/{memory_id}/logs`, 로그 단건은 `/memory-logs/{log_id}`에서 제공한다. 용량과 단위를 분리하고 코드는 항상 자동 생성한다. `1TB`와 `1000GB`는 같은 용량으로 중복을 금지하며, 수정 시 코드도 갱신한다. 세부 규칙은 [Memory](docs/features/dimension/memory.md)·[MemoryLog](docs/features/dimension/memory-log.md)를 따른다.
 `make up`은 PostgreSQL 준비 → 일회성 `migrate` 서비스의 Alembic 적용 → API 시작 순서로 실행한다. 마이그레이션 실패 시 API 시작을 막는다.
-`0005_merge_brand_country`는 기존 Brand(`0004`)·Country(`0004_country`) 리비전을 병합 리비전으로 연결한다. 어느 한쪽만 적용된 DB도 `make up`으로 빠진 차원을 추가하며 기존 데이터·이력을 보존한다. 현재 최신 리비전 `0006_year_dimension`은 이 병합 리비전 뒤에 Year·YearLog를 추가한다.
+`0005_merge_brand_country`는 기존 Brand(`0004`)·Country(`0004_country`) 리비전을 연결한다. `0006_year_dimension`·`0006_memory`는 그 뒤에 Year·Memory를 각각 추가하고, 최신 `0007_merge_year_memory`는 두 차원의 리비전을 연결한다. 어느 선행 head가 적용된 DB도 `make up`으로 빠진 차원을 추가하며 기존 데이터·이력을 보존한다. Memory의 GB 환산 용량은 DB 생성 컬럼으로 관리한다.
 
 주소는 기본 포트 기준이다. 소스 변경 후 `make up`을 다시 실행하면 이미지를 재빌드한다.
 
@@ -66,7 +67,7 @@ PostgreSQL 포트는 로컬 루프백에만 공개한다. `.env`에서 DB 이름
 ## 설정
 
 포트나 DB 설정을 바꾸려면 [.env.example](.env.example)을 `.env`로 복사해 수정한다. 기본 자격증명은 로컬 개발 전용이다.
-PostgreSQL은 볼륨에 데이터를 보존하며, 기존 볼륨의 DB 계정·암호는 `.env` 수정만으로 바뀌지 않는다. Redis 캐시는 영속화하지 않는다. Company·Model·Brand·Country·Year 삭제는 물리 삭제지만 전용 `company_logs`·`model_logs`·`brand_logs`·`country_logs`·`year_logs`에 원본 UUID를 FK 없이 보존하며 이력은 자동 만료하지 않는다.
+PostgreSQL은 볼륨에 데이터를 보존하며, 기존 볼륨의 DB 계정·암호는 `.env` 수정만으로 바뀌지 않는다. Redis 캐시는 영속화하지 않는다. Company·Model·Brand·Country·Year·Memory 삭제는 물리 삭제지만 전용 `company_logs`·`model_logs`·`brand_logs`·`country_logs`·`year_logs`·`memory_logs`에 원본 UUID를 FK 없이 보존하며 이력은 자동 만료하지 않는다.
 `CURSOR_SIGNING_KEY`는 최소 32바이트이며 직접 앱을 실행할 때 반드시 설정한다. Compose에는 로컬 개발용 기본값이 있고 키 교체 시 기존 cursor는 무효화된다.
 
 | 파일 | 관리 대상 |
@@ -76,7 +77,7 @@ PostgreSQL은 볼륨에 데이터를 보존하며, 기존 볼륨의 DB 계정·�
 | [uv.lock](uv.lock) | 전체 Python 의존성 잠금 |
 | [Dockerfile](Dockerfile) | uv 버전·앱 이미지 구성 |
 | [compose.yaml](compose.yaml) | 서비스 설정·PostgreSQL 및 Redis 이미지 버전 |
-| [alembic.ini](alembic.ini), [초기 스키마](migrations/versions/0001_company_dimension.py)·[Company 로그 분리](migrations/versions/0002_split_company_logs.py)·[Model 추가](migrations/versions/0003_model_dimension.py)·[Brand 추가](migrations/versions/0004_brand_dimension.py)·[Country 추가](migrations/versions/0004_country_dimension.py)·[Brand·Country 병합](migrations/versions/0005_merge_brand_country.py)·[Year 추가](migrations/versions/0006_year_dimension.py) | DB 마이그레이션 설정·스키마 이력 |
+| [alembic.ini](alembic.ini), [초기 스키마](migrations/versions/0001_company_dimension.py)·[Company 로그 분리](migrations/versions/0002_split_company_logs.py)·[Model 추가](migrations/versions/0003_model_dimension.py)·[Brand 추가](migrations/versions/0004_brand_dimension.py)·[Country 추가](migrations/versions/0004_country_dimension.py)·[Brand·Country 병합](migrations/versions/0005_merge_brand_country.py)·[Year 추가](migrations/versions/0006_year_dimension.py)·[Memory 추가](migrations/versions/0006_memory_dimension.py)·[Year·Memory 병합](migrations/versions/0007_merge_year_memory.py) | DB 마이그레이션 설정·스키마 이력 |
 | [app.py](src/mdm_demo/app.py) | Scalar 번들 버전 |
 
 ## 관련 문서

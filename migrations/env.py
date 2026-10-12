@@ -12,6 +12,8 @@ from mdm_demo.infrastructure.persistence.models.company import CompanyModel  # n
 from mdm_demo.infrastructure.persistence.models.company_log import CompanyLogModel  # noqa: F401
 from mdm_demo.infrastructure.persistence.models.country import CountryModel  # noqa: F401
 from mdm_demo.infrastructure.persistence.models.country_log import CountryLogModel  # noqa: F401
+from mdm_demo.infrastructure.persistence.models.memory import MemoryModel  # noqa: F401
+from mdm_demo.infrastructure.persistence.models.memory_log import MemoryLogModel  # noqa: F401
 from mdm_demo.infrastructure.persistence.models.model import ModelModel  # noqa: F401
 from mdm_demo.infrastructure.persistence.models.model_log import ModelLogModel  # noqa: F401
 from mdm_demo.infrastructure.persistence.models.year import YearModel  # noqa: F401

@@ -9,7 +9,7 @@ from sqlalchemy import inspect, text
 from sqlalchemy.engine import Connection
 
 MERGE_REVISION = "0005_merge_brand_country"
-LATEST_REVISION = "0006_year_dimension"
+LATEST_REVISION = "0007_merge_year_memory"
 
 
 def migrate(connection: Connection, revision: str, *, downgrade: bool = False) -> None:
@@ -18,7 +18,7 @@ def migrate(connection: Connection, revision: str, *, downgrade: bool = False) -
     script = ScriptDirectory.from_config(config)
     assert script.get_heads() == [LATEST_REVISION]
     head = script.get_revision(LATEST_REVISION)
-    assert head is not None and head.down_revision == MERGE_REVISION
+    assert head is not None and head.down_revision == ("0006_year_dimension", "0006_memory")
     if downgrade:
         command.downgrade(config, revision)
     else:
@@ -79,10 +79,10 @@ async def test_merge_upgrade_preserves_either_branch_and_existing_logs(database,
                     previous_rows[name] = (
                         await connection.execute(text(f"SELECT * FROM {name} ORDER BY id"))
                     ).all()
-            await connection.run_sync(lambda conn: migrate(conn, "head"))
+            await connection.run_sync(lambda conn: migrate(conn, MERGE_REVISION))
             assert (
                 await connection.execute(text("SELECT version_num FROM alembic_version"))
-            ).scalars().all() == [LATEST_REVISION]
+            ).scalars().all() == [MERGE_REVISION]
             for table, log_table, _ in dimensions:
                 for name in (table, log_table):
                     rows = (
@@ -101,9 +101,9 @@ async def test_merge_upgrade_preserves_either_branch_and_existing_logs(database,
                 assert (
                     await connection.execute(text(f"SELECT * FROM {name} ORDER BY id"))
                 ).all() == expected
-            await connection.run_sync(lambda conn: migrate(conn, "head"))
+            await connection.run_sync(lambda conn: migrate(conn, MERGE_REVISION))
             assert (
                 await connection.execute(text("SELECT version_num FROM alembic_version"))
-            ).scalars().all() == [LATEST_REVISION]
+            ).scalars().all() == [MERGE_REVISION]
         finally:
             await transaction.rollback()

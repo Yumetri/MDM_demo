@@ -18,6 +18,7 @@ pytest_plugins = (
     "tests.fixtures.country",
     "tests.fixtures.brand",
     "tests.fixtures.year",
+    "tests.fixtures.memory",
 )
 
 

@@ -5,7 +5,7 @@
 - 사용자와 목적: 개발자가 API 명세를 열람하고 Scalar UI에서 요청을 실행한다. 도구는 OpenAPI 스키마를 조회할 수 있다.
 - 처리 결과: 문서 UI의 HTML 또는 OpenAPI JSON을 제공한다.
 - 진입점: Scalar UI `GET /docs`, OpenAPI 스키마 `GET /openapi.json`.
-- API 계약: [API 규약](../../api-conventions.md)은 Company·Model·Brand·Country·Year와 공통 응답·오류 계약을 관리한다. 각 기능의 구현 범위는 해당 기능 문서에서 확인한다.
+- API 계약: [API 규약](../../api-conventions.md)은 Company·Model·Brand·Country·Year·Memory와 공통 응답·오류 계약을 관리한다. 각 기능의 구현 범위는 해당 기능 문서에서 확인한다.
 
 ## 업무 규칙과 제약
 
@@ -49,6 +49,7 @@
 - 실제 브라우저에서 Company 생성·조회·수정·삭제 요청과 응답을 확인했다. [API 계약 테스트](../../../tests/api/test_company.py)는 구체적인 OpenAPI 스키마도 검사한다.
 - Company CRUD·CompanyLog 조회에 성공·실패·경계값 요청/응답과 경로·쿼리 예제를 제공한다. 각 예제는 상태·사전 조건을 설명하고 동적인 UUID·cursor 복사 절차를 안내한다. [예제 테스트](../../../tests/api/test_openapi_examples.py)는 OpenAPI 예제를 실제 HTTP 요청으로 실행한다.
 - Country CRUD·CountryLog도 이름 있는 예제를 제공하며 [예제 실행 테스트](../../../tests/api/test_country_openapi_examples.py)로 검증한다. 실제 Scalar에서 생성·수정·삭제·삭제 후 이력, 중복·입력 오류·cursor를 확인했다. 첫 페이지 기본 cursor는 생성 코드와 실제 요청 모두에서 생략된다.
+- Memory CRUD·MemoryLog는 [예제 원본](../../../src/mdm_demo/presentation/schemas/memory_examples.py)과 [실행 테스트](../../../tests/api/test_memory_openapi_examples.py)를 제공한다. Scalar에서 생성·정규화·상한·중복·불리언/코드 입력 오류·수정·표기 변경·삭제·이력·실제 cursor 순회를 확인했다. 정수형 실수의 UI 직렬화 결함은 사용자 승인 후 실행 예제를 256.5로 교체하고 원시 JSON 256.0 검증 안내로 보완했다. 실제 Scalar에서 POST·PATCH의 256.5 전송·422·데이터/이력 불변을 재확인했으며, 원시 JSON 거부 테스트 2개를 포함한 전체 838개가 통과했다.
 - 검증 공백: 스모크 검사는 실제 브라우저 렌더링·CDN 로딩·UI 요청 실행·OpenAPI 메모리 재사용을 검사하지 않는다. 전용 브라우저 자동화 테스트는 없다.
 
 ## 관련 기능

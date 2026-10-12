@@ -16,16 +16,21 @@ async def test_isolated_feature_create_and_log_share_transaction(
     collection = (
         "companies"
         if module.name == "company"
-        else ("countries" if module.name == "country" else module.name + "s")
+        else (
+            "countries"
+            if module.name == "country"
+            else ("memories" if module.name == "memory" else module.name + "s")
+        )
     )
     async with app.router.lifespan_context(app):
         async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
-            created = await client.post(
-                f"/{collection}",
-                json=(
-                    {"year": 2024} if module.name == "year" else {"name": "Isolated", "code": "ISO"}
-                ),
-            )
+            if module.name == "memory":
+                payload = {"capacity": 256, "unit": "GB"}
+            elif module.name == "year":
+                payload = {"year": 2024}
+            else:
+                payload = {"name": "Isolated", "code": "ISO"}
+            created = await client.post(f"/{collection}", json=payload)
             assert created.status_code == 201
             entity = created.json()["data"]
             logs = await client.get(f"/{collection}/{entity['id']}/logs")
