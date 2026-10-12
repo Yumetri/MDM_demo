@@ -250,6 +250,8 @@ def responses(
         )
         if code == "COUNTRY_NAME_DUPLICATE":
             field = "body.name"
+        if code == "YEAR_DUPLICATE":
+            field = "body.year"
         response["content"]["application/json"]["examples"][code] = error_example(
             code, field, dimension=dimension
         )
@@ -342,4 +344,17 @@ manual_code 예제로 KOREA/KOR을 생성하고 data.id를 후속 요청 경로�
 수정 중복 예제는 JAPAN/JPN을 별도로 생성한 뒤 KOREA의 UUID에서 실행합니다.
 공통 CRUD·이력·cursor 테스트 순서는 위 안내를 따릅니다.
 성공 예제를 재실행할 때는 해당 이름과 코드의 이전 항목을 삭제하세요. 삭제 후 로그는 유지됩니다.
+"""
+
+
+WORKFLOW += """
+
+### Year 테스트 준비
+Year는 제품 출시 연도입니다. POST /years에서 {"year": 2024}처럼 정수만 입력하세요.
+1900~2999만 허용하며 code는 입력할 수 없습니다. 수정 시 코드도 연도와 함께 바뀝니다.
+수정 중복 예제는 2024·2025를 먼저 생성한 뒤 2024의 UUID에서 실행합니다.
+Year 목록은 연도 내림차순, 이력은 기록 시각·UUID 내림차순입니다.
+공통 CRUD·이력·cursor 실행 순서는 위 안내를 따릅니다.
+/years/{year_id}/logs와 /year-logs/{log_id}에서 실제 응답 UUID를 사용하세요.
+예제 재실행 전 본인이 만든 해당 연도를 삭제해 정리하세요. 삭제 후 이력은 유지됩니다.
 """

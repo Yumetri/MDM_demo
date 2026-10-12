@@ -11,6 +11,7 @@ class ErrorSpec:
 
 
 ERRORS = {
+    "YEAR_DUPLICATE": ErrorSpec(409, "이미 존재하는 출시 연도입니다."),
     "VALIDATION_ERROR": ErrorSpec(422, "요청 값이 올바르지 않습니다."),
     "INVALID_CURSOR": ErrorSpec(400, "페이지 커서가 올바르지 않습니다."),
     "BAD_REQUEST": ErrorSpec(400, "요청을 처리할 수 없습니다."),
