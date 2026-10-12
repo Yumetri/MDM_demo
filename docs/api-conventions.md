@@ -239,3 +239,53 @@ Country는 코드 자동 생성 기능이 없으므로 자동 생성 전용 오�
 - Country 생성은 name·code가 필수다. 이름은 trim → 대문자 → NFC 후 1~100자이며 유일하다. NUL·단독 surrogate는 거부한다. 코드는 trim 후 ASCII 영문 3자로 검증하고 대문자로 저장하며 유일하다. 코드 자동 생성·ISO 존재 검증은 하지 않는다.
 - PATCH는 name만 받으며 정규화된 이름이 같으면 수정 시각·로그를 변경하지 않는다. 물리 삭제 후 이름·코드 재사용은 새 UUID로 처리한다.
 - [Country 예제 원본](../src/mdm_demo/presentation/schemas/country_examples.py)과 [예제 실행 테스트](../tests/api/test_country_openapi_examples.py)로 정상·실패·경계값을 검증한다.
+
+## Category HTTP 계약
+
+2026-10-12 사용자와 합의한 계약을 Category 런타임·OpenAPI·오류 카탈로그·테스트에 반영했다. 업무 규칙은 [Category](features/dimension/category.md), 로그 보존·스냅샷 범위는 [CategoryLog](features/dimension/category-log.md), 구현 계획은 [6번 계획](plans/issue-6-category.md)을 따른다.
+
+| 메서드·경로 | 입력 | 성공 |
+| --- | --- | --- |
+| POST `/categories` | 문자열 name 필수, 문자열 code 생략 가능 | 201 단건 |
+| GET `/categories` | 선택적 cursor·limit | 200 목록 |
+| GET `/categories/{category_id}` | Category UUID | 200 단건 |
+| PATCH `/categories/{category_id}` | 문자열 name 필수 | 200 단건 |
+| DELETE `/categories/{category_id}` | Category UUID | 204, 본문 없음 |
+| GET `/categories/{category_id}/logs` | 원래 Category UUID, 선택적 cursor·limit | 200 이력 목록 |
+| GET `/category-logs/{log_id}` | 로그 UUID | 200 이력 단건 |
+
+- Category 응답은 id/name/code/created_at/updated_at, 로그 응답은 id/category_id/operation/occurred_at/request_id/before/after다. UUID v4·UTC 시각과 공통 data/meta 응답을 재사용한다.
+- 로그의 request_id는 변경 당시 서버 발급 요청 ID, meta.request_id는 현재 조회 요청 ID다. before/after는 id/name/code 스냅샷이며 생성 전·삭제 후에는 null이다.
+- name은 필수 문자열이다. 코드 자동 생성은 필드 생략에만 적용한다. 명시적 null·빈 문자열·공백만 있는 값·잘못된 타입·알 수 없는 JSON 필드는 422 VALIDATION_ERROR다.
+- PATCH는 name만 받으며 code 입력·빈 객체·알 수 없는 필드는 422다. 정규화 후 이름이 같으면 200을 반환하고 데이터·updated_at·로그를 유지한다.
+- 없는 Category의 단건 조회·수정·삭제, 삭제 후 조회·재삭제, 없는 로그 단건은 기존 공통 계약처럼 404 NOT_FOUND다. 잘못된 UUID 형식은 422다.
+- 이력 목록은 현재 Category 존재를 검사하지 않는다. 기록 없는 UUID는 200 빈 목록이며 삭제한 Category의 기록도 조회한다.
+- Category 목록은 (created_at ASC, id ASC), 이력은 (occurred_at ASC, id ASC)로 정렬한다. limit 기본 20, 범위 1~100이며 범위 위반은 422다.
+- 첫 페이지에는 cursor를 생략한다. 다음 페이지는 같은 목록 응답의 meta.page.next_cursor를 사용한다. 같은 목록에서 limit 변경은 허용한다.
+- 기존 공통 HMAC cursor 계약을 적용한다. 빈 값·잘못된 형식·변조·다른 차원/목록/대상 이력 cursor는 400 INVALID_CURSOR다. 키 교체 시 기존 cursor가 무효화되며 만료 시각은 없다.
+- 검색·사용자 지정 정렬·총 개수는 제공하지 않는다. 기존 차원과 같이 정의하지 않은 query 파라미터는 무시한다. 순회 중 스냅샷 일관성·실제 commit 순서는 보장하지 않는다.
+- 오류 details의 필드는 name에 body.name, code에 body.code를 사용한다. 기존 공통 검증·cursor·없는 대상·내부 오류 계약과 입력·내부 정보 비노출 원칙을 재사용한다.
+
+### Category 중복·자동 생성 오류
+
+아래 코드·상태·문구와 동시 중복 우선순위 없음은 최종 계획에서 합의했다. 공통 자동 생성 메시지는 기존 계약을 그대로 재사용한다.
+
+| 조건 | 코드 | HTTP | 기본 메시지 |
+| --- | --- | --- | --- |
+| 정규화된 이름 중복 | `CATEGORY_NAME_DUPLICATE` | 409 | 이미 존재하는 분류명입니다. |
+| 직접 입력한 코드 중복 | `CATEGORY_CODE_DUPLICATE` | 409 | 이미 존재하는 분류 코드입니다. |
+| 자동 생성한 코드 중복 | `DIMENSION_AUTO_CODE_DUPLICATE` | 409 | 기존 공통 카탈로그 메시지 |
+| 자동 생성에 필요한 영문·숫자 부족 | `DIMENSION_AUTO_CODE_UNAVAILABLE` | 422 | 기존 공통 메시지의 {dimension}에 category 사용 |
+
+- 이름과 코드가 동시에 중복이면 DB가 보고한 알려진 제약에 해당하는 오류 하나를 반환하며 우선순위를 보장하지 않는다.
+- 코드 중복은 자동 생성 여부에 따라 위 두 오류를 구분한다. Category 생성·이름 수정의 알려진 UNIQUE 제약만 해당 중복으로 변환하고 예상하지 못한 DB 오류는 공통 INTERNAL_ERROR로 처리한다.
+
+### Category OpenAPI 구현·검증
+
+- 생성·수정 본문, 경로 UUID·로그 UUID, limit에 이름 있는 예제를 제공한다. 예제마다 예상 상태·오류 코드·사전 조건을 적는다.
+- 입력 생략/null/빈 값/공백/타입·길이·코드 형식, 정규화된 이름 중복, 직접/자동 코드 중복·자동 생성 불가, 없는 대상·no-op·삭제 후 조회, cursor·limit 경계를 포함한다.
+- 두 항목으로 같은 이름 중복만 발생시키는 예제는 서로 다른 유효 코드를 사용한다. 코드 중복만 검사할 때에는 서로 다른 정규화 이름을 사용해 동시 중복의 우선순위 없음에 의존하지 않는다.
+- 정상 UUID·서명 cursor는 실제 생성/목록 응답에서 복사하며 고정 UUID 존재를 가정하지 않는다. 중복 예제는 사전 생성·정리 절차를 안내하고 DELETE 204에는 본문 예제를 만들지 않는다.
+- 공통 실행 순서는 문서 상단에서 한 번만 안내한다. 첫 페이지 cursor에 실패 예제를 자동 입력하지 않고 수동 실행 방법만 설명한다.
+- OpenAPI에서 추출한 실제 요청 예제를 API 테스트로 실행하고 실제 Scalar에서 예제 선택·요청 실행, 첫 페이지 생성 코드와 전송 요청의 cursor 생략을 확인한다.
+- [Category 예제 원본](../src/mdm_demo/presentation/schemas/category_examples.py)과 [예제 실행 테스트](../tests/api/test_category_openapi_examples.py)로 요청 예제·null 보존·구체 응답·중복 오류를 검증했다. 실제 Scalar 실행 결과는 [작업 계획](plans/issue-6-category.md)에 기록했다. 단독 surrogate는 문서 JSON에 넣지 않고 실제 API 테스트에서 JSON escape 입력의 거부를 검증한다.

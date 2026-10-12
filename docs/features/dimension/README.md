@@ -10,6 +10,8 @@
 - [BrandLog](brand-log.md)
 - [Country](country.md)
 - [CountryLog](country-log.md)
+- [Category](category.md)
+- [CategoryLog](category-log.md)
 
 공통 구현 원칙은 [이슈 #1](https://github.com/Yumetri/MDM_demo/issues/1), 차원별 합의 사항과 미정 항목은 각 기능 문서를 따른다.
 

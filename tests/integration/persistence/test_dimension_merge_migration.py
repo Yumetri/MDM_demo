@@ -14,7 +14,7 @@ MERGE_REVISION = "0005_merge_brand_country"
 def migrate(connection: Connection, revision: str, *, downgrade: bool = False) -> None:
     config = Config("alembic.ini")
     config.attributes["connection"] = connection
-    assert ScriptDirectory.from_config(config).get_heads() == [MERGE_REVISION]
+    assert ScriptDirectory.from_config(config).get_heads() == ["0006_category"]
     if downgrade:
         command.downgrade(config, revision)
     else:
@@ -75,7 +75,7 @@ async def test_merge_upgrade_preserves_either_branch_and_existing_logs(database,
                     previous_rows[name] = (
                         await connection.execute(text(f"SELECT * FROM {name} ORDER BY id"))
                     ).all()
-            await connection.run_sync(lambda conn: migrate(conn, "head"))
+            await connection.run_sync(lambda conn: migrate(conn, MERGE_REVISION))
             assert (
                 await connection.execute(text("SELECT version_num FROM alembic_version"))
             ).scalars().all() == [MERGE_REVISION]
@@ -97,7 +97,7 @@ async def test_merge_upgrade_preserves_either_branch_and_existing_logs(database,
                 assert (
                     await connection.execute(text(f"SELECT * FROM {name} ORDER BY id"))
                 ).all() == expected
-            await connection.run_sync(lambda conn: migrate(conn, "head"))
+            await connection.run_sync(lambda conn: migrate(conn, MERGE_REVISION))
             assert (
                 await connection.execute(text("SELECT version_num FROM alembic_version"))
             ).scalars().all() == [MERGE_REVISION]

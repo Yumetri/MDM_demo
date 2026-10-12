@@ -16,7 +16,11 @@ async def test_isolated_feature_create_and_log_share_transaction(
     collection = (
         "companies"
         if module.name == "company"
-        else ("countries" if module.name == "country" else module.name + "s")
+        else (
+            "countries"
+            if module.name == "country"
+            else ("categories" if module.name == "category" else module.name + "s")
+        )
     )
     async with app.router.lifespan_context(app):
         async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:

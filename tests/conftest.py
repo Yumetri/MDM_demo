@@ -17,6 +17,7 @@ pytest_plugins = (
     "tests.fixtures.model",
     "tests.fixtures.country",
     "tests.fixtures.brand",
+    "tests.fixtures.category",
 )
 
 

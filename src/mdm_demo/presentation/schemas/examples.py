@@ -242,13 +242,14 @@ def responses(
                 "COMPANY_CODE_DUPLICATE",
                 "MODEL_CODE_DUPLICATE",
                 "COUNTRY_CODE_DUPLICATE",
+                "CATEGORY_CODE_DUPLICATE",
                 "BRAND_CODE_DUPLICATE",
                 "DIMENSION_AUTO_CODE_DUPLICATE",
                 "DIMENSION_AUTO_CODE_UNAVAILABLE",
             }
             else None
         )
-        if code == "COUNTRY_NAME_DUPLICATE":
+        if code in {"COUNTRY_NAME_DUPLICATE", "CATEGORY_NAME_DUPLICATE"}:
             field = "body.name"
         response["content"]["application/json"]["examples"][code] = error_example(
             code, field, dimension=dimension
@@ -342,4 +343,16 @@ manual_code 예제로 KOREA/KOR을 생성하고 data.id를 후속 요청 경로�
 수정 중복 예제는 JAPAN/JPN을 별도로 생성한 뒤 KOREA의 UUID에서 실행합니다.
 공통 CRUD·이력·cursor 테스트 순서는 위 안내를 따릅니다.
 성공 예제를 재실행할 때는 해당 이름과 코드의 이전 항목을 삭제하세요. 삭제 후 로그는 유지됩니다.
+"""
+
+
+WORKFLOW += """
+
+### Category 테스트 준비
+Category 이름은 양끝 공백 제거·대문자·NFC 정규화 후 저장하며 이름과 코드는 각각 유일합니다.
+auto_code 예제로 SMARTPHONE/SMA를 생성하거나 manual_code 예제로 이름과 코드를 직접 입력하세요.
+두 예제는 같은 이름·코드를 사용하므로 한 가지만 실행하고 재실행 전 본인이 만든 항목을 정리하세요.
+second_category는 TABLET/TAB을 생성하며 페이지 순회·수정 중복 예제의 사전 조건입니다.
+생성 응답 data.id와 이력 목록 data[].id를 경로에 복사하며 공통 실행 순서는 위 안내를 따릅니다.
+코드는 생략만 자동 생성이며 null·빈 값은422입니다. 실패 예제의 예상 코드와 사전 조건을 확인하세요.
 """
