@@ -10,6 +10,8 @@
 - [BrandLog](brand-log.md)
 - [Country](country.md)
 - [CountryLog](country-log.md)
+- [Category](category.md)
+- [CategoryLog](category-log.md)
 - [Year](year.md)
 - [YearLog](year-log.md)
 
