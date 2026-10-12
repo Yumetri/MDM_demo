@@ -244,12 +244,13 @@ def responses(
                 "COUNTRY_CODE_DUPLICATE",
                 "CATEGORY_CODE_DUPLICATE",
                 "BRAND_CODE_DUPLICATE",
+                "NETWORK_CODE_DUPLICATE",
                 "DIMENSION_AUTO_CODE_DUPLICATE",
                 "DIMENSION_AUTO_CODE_UNAVAILABLE",
             }
             else None
         )
-        if code in {"COUNTRY_NAME_DUPLICATE", "CATEGORY_NAME_DUPLICATE"}:
+        if code in {"COUNTRY_NAME_DUPLICATE", "CATEGORY_NAME_DUPLICATE", "NETWORK_NAME_DUPLICATE"}:
             field = "body.name"
         if code == "YEAR_DUPLICATE":
             field = "body.year"
@@ -366,4 +367,21 @@ Year 목록은 연도 내림차순, 이력은 기록 시각·UUID 내림차순�
 공통 CRUD·이력·cursor 실행 순서는 위 안내를 따릅니다.
 /years/{year_id}/logs와 /year-logs/{log_id}에서 실제 응답 UUID를 사용하세요.
 예제 재실행 전 본인이 만든 해당 연도를 삭제해 정리하세요. 삭제 후 이력은 유지됩니다.
+"""
+
+
+WORKFLOW += """
+
+### Network 테스트 준비
+Network는 이동통신 규격 하나를 자유 등록합니다. `/networks`의 auto_code 예제로 LTE를 생성합니다.
+이름은 양끝 공백 제거·대문자·NFC 정규화 후 유일하게 저장합니다.
+직접 코드는 ASCII 영문·숫자 1~20자이며 생략 시 이름의 해당 문자를 모두 추출합니다.
+LTE-A → LTEA, 5G NR → 5GNR입니다. 자동 생성 불가·충돌 시 직접 코드를 입력하세요.
+second_network로 5G를 생성하면 최신순 목록·이름 중복 수정 예제를 확인할 수 있습니다.
+규격 목록은 생성 시각·UUID, 이력 목록은 기록 시각·로그 UUID 내림차순입니다.
+생성 응답 data.id와 `/networks/{network_id}/logs`의 data[].id를 복사하세요.
+다음 페이지에는 같은 목록의 meta.page.next_cursor를 사용합니다.
+로그 단건은 `/network-logs/{log_id}`에서 조회합니다. 공통 요청 순서는 위 안내를 따릅니다.
+이름·코드 중복 예제의 사전 조건을 따르고, 재실행 전 본인이 만든 테스트 규격을 삭제하세요.
+로그는 삭제 후에도 유지되며 재등록하면 새 UUID가 발급됩니다.
 """

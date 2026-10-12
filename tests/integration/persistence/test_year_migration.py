@@ -21,7 +21,7 @@ async def test_year_migration_preserves_all_dimensions_and_roundtrip(database, b
     engine, _ = database
     schema = "test_year_migration_" + uuid4().hex
     assert ScriptDirectory.from_config(Config("alembic.ini")).get_heads() == [
-        "0007_merge_category_year"
+        "0008_merge_dimension_heads"
     ]
     async with engine.connect() as connection:
         transaction = await connection.begin()

@@ -1,6 +1,6 @@
 # API 응답·오류·페이지네이션 규약
 
-Company·Model·Brand·Country·Year 구현에 사용하는 계약을 확정했다. 인증·권한 및 다른 차원의 상세 계약은 이번 구현 범위 밖이다. 공통 카탈로그의 인증 오류는 프레임워크 오류 변환을 위한 정의이며 인증 기능 구현을 의미하지 않는다.
+Company·Model·Brand·Country·Year·Network 구현에 사용하는 계약을 확정했다. 인증·권한 및 다른 차원의 상세 계약은 이번 구현 범위 밖이다. 공통 카탈로그의 인증 오류는 프레임워크 오류 변환을 위한 정의이며 인증 기능 구현을 의미하지 않는다.
 
 ## 성공 응답
 
@@ -352,3 +352,53 @@ Country는 코드 자동 생성 기능이 없으므로 자동 생성 전용 오�
 독립 차원·Year CRUD·대상별 이력/로그 단건 조회를 제공하며 검색·연도 범위 필터·총 개수와 다른 차원의 FK 연결은 제외하기로 합의했다. 로그는 추가 전용이다.
 
 인증·권한·행위자, 차원 캐시, 로그 통합 검색·자동 만료, 멱등성 키·자동 재시도는 추가하지 않는다. 수정·삭제는 행 잠금으로 직렬 처리하며 별도 낙관적 버전 검사를 추가하지 않는다. 검증 근거는 [Year 검증 보고](reports/issue-7-validation.md)를 따른다.
+
+## Network·NetworkLog HTTP 계약
+
+이슈 #8에서 업무 규칙·공통 HTTP 표현·오류 메시지·운영 기본 정책을 사용자와 합의하고 런타임 오류 카탈로그·OpenAPI·API·테스트에 반영했다.
+업무 명세는 [Network](features/dimension/network.md)·[NetworkLog](features/dimension/network-log.md)를 따른다. Company·Model·Brand·Country의 오름차순과 Year의 내림차순 계약은 변경하지 않는다.
+
+| 메서드·경로 | 입력 | 성공 |
+| --- | --- | --- |
+| POST `/networks` | JSON name 필수, code 생략 가능 | 201 단건 |
+| GET `/networks` | 선택 cursor·limit | 200 목록 |
+| GET `/networks/{network_id}` | Network UUID | 200 단건 |
+| PATCH `/networks/{network_id}` | JSON name 필수 | 200 단건 |
+| DELETE `/networks/{network_id}` | Network UUID | 204 본문 없음 |
+| GET `/networks/{network_id}/logs` | Network UUID, 선택 cursor·limit | 200 이력 목록 |
+| GET `/network-logs/{log_id}` | 로그 UUID | 200 이력 단건 |
+
+### 합의한 입력·동작의 HTTP 계약
+
+- 단건 필드는 id/name/code/created_at/updated_at. UUID v4·UTC·공통 envelope·서버 request ID 정책을 유지한다.
+- name은 문자열이며 strip → upper → NFC 후 1~100자, 내부 공백·한글·숫자·기호를 보존하고 정규화한 이름은 유일하다. 길이는 변환 후 판단한다. NUL·단독 surrogate는 기존 차원처럼 422로 거부한다.
+- 직접 code는 strip 후 ASCII 영문·숫자 1~20자로 검증하고 대문자로 저장한다. name의 ASCII 영문·숫자 전체 추출로 자동 생성하며 0자·20자 초과·코드 중복은 실패한다. 잘라내거나 접미사를 붙이지 않는다.
+- code 필드 생략만 자동 생성이다. 명시 null·빈값·공백만 있는 값·비문자열·내부 공백·기호는 422다. 알 수 없는 JSON 필드, PATCH의 code·빈 객체도 422다.
+- PATCH는 name만 변경하며 code는 유지한다. 정규화한 동일 이름 수정은 200이고 데이터·수정 시각·이력 변경이 없다. 수정 이름도 유일성 검사한다.
+- 삭제한 이름·코드를 재사용할 수 있으며 새 UUID를 발급한다. 없는 대상·삭제 후 조회·재삭제는 404, 잘못된 UUID 형식은 422다.
+- 이력 응답은 id/network_id/operation/occurred_at/request_id/before/after다. create/update/delete와 전체 id/name/code 스냅샷을 반환하며 생성 전·삭제 후는 null이다. 로그 request_id는 변경 당시 요청, meta.request_id는 현재 조회다.
+- 대상별 이력은 원본 존재를 확인하지 않고 삭제된 대상도 조회한다. 기록 없는 UUID는 200 빈 목록, 없는 로그 단건은 404다.
+- 이력 직접 생성·수정·삭제 API·통합 이력 검색은 제공하지 않으며 자동 만료·행위자 필드를 추가하지 않는다.
+
+### 합의한 최신순 조회와 cursor 계약
+
+- Network 목록 `(created_at DESC, id DESC)`, 이력 목록 `(occurred_at DESC, id DESC)`, 기본 20개·허용 1~100개다. 검색·필터·선택 정렬·총 개수는 제공하지 않는다.
+- 다음 페이지는 이전 페이지 마지막 시각·UUID보다 작은 키를 조회한다. 동률은 UUID로 구분한다. 이름 수정은 Network의 목록 위치를 바꾸지 않는다.
+- HMAC 서명·길이·정규 인코딩 검증을 기존 방식으로 유지하되 조회 식별자에 Network 및 내림차순을 포함한다. 로그 cursor는 Network UUID에도 묶는다. 다른 목록·차원·대상·정렬의 토큰은 INVALID_CURSOR/400이다. 동일 목록의 limit 변경은 허용한다.
+- 첫 페이지는 cursor를 생략한다. 동적 cursor는 실제 응답의 meta.page.next_cursor에서 복사한다. cursor 오류 예제는 기본 요청에 자동 입력하지 않고 설명에서 수동 입력을 안내한다.
+- 공통 빈/마지막 페이지 응답을 유지하며 총 개수·스냅샷 일관성을 보장하지 않는다. 순회 중 경계보다 최신인 삽입은 이미 지나간 범위라 누락될 수 있고 삭제한 항목은 사라진다. 실제 commit 순서를 보장하지 않는다.
+
+### 합의한 오류 카탈로그
+
+| 조건 | 코드 | HTTP | 기본 메시지 |
+| --- | --- | --- | --- |
+| 생성·수정의 이름 중복 | NETWORK_NAME_DUPLICATE | 409 | 이미 존재하는 네트워크 규격명입니다. |
+| 직접 코드 중복 | NETWORK_CODE_DUPLICATE | 409 | 이미 존재하는 네트워크 코드입니다. |
+| 자동 코드 중복 | DIMENSION_AUTO_CODE_DUPLICATE | 409 | 자동 생성된 코드가 이미 존재합니다. 코드를 직접 입력해 주세요. |
+| 자동 추출 결과 없음·20자 초과 | DIMENSION_AUTO_CODE_UNAVAILABLE | 422 | network에서 코드를 자동으로 생성할 수 없습니다. 코드를 직접 입력해 주세요. |
+
+입력·없는 대상·cursor·내부 오류는 기존 공통 오류 카탈로그를 따른다. details.field는 해당 body.name/body.code/query.limit/path 필드를 사용한다. 알려진 이름·코드 UNIQUE 위반만 중복으로 변환한다. 둘 다 중복인 경우 어느 오류가 먼저 반환되는지는 별도 우선순위를 보장하지 않는다.
+정의하지 않은 query 파라미터는 기존 차원처럼 무시하며 조회 조건으로 사용하지 않는다. 멱등성 키·자동 재시도·commit 응답 유실 복구는 제공하지 않는다.
+
+
+Network의 [실행 예제](../src/mdm_demo/presentation/schemas/network_examples.py)에는 31개 생성·14개 수정 본문과 경로·limit·응답 예제를 제공한다. [예제 실행 검사](../tests/api/test_network_openapi_examples.py)는 스키마에서 꺼낸 예제를 실제 요청으로 실행하고 응답 모델·null·cursor 기본 생략·공통 테스트 안내를 검증한다. 실제 Scalar 검수 범위는 [Network](features/dimension/network.md)와 [검수 결과](plans/issue-8-network-dimension.md#구현검수-결과)를 따른다.

@@ -1,0 +1,10 @@
+services:
+  api:
+    image: mdm-network-8-api
+  migrate:
+    image: mdm-network-8-api
+  test:
+    image: mdm-network-8-api
+  postgres:
+    ports: !override
+      - "127.0.0.1:15438:5432"
